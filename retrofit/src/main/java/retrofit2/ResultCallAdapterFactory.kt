@@ -29,16 +29,12 @@ class ResultCallAdapter<T>(
   private val responseType: Type
 ) : CallAdapter<T, Call<Result<T>>> {
 
-  override fun responseType(): Type {
-    return responseType
-  }
+  override fun responseType(): Type = responseType
 
-  override fun adapt(call: Call<T>): Call<Result<out T>> {
-    return ResultCall(call)
-  }
+  override fun adapt(call: Call<T>): Call<Result<T>> = ResultCall(call)
 }
 
-class ResultCall<T>(private val delegate: Call<T>) : Call<Result<out T>> {
+class ResultCall<T>(private val delegate: Call<T>) : Call<Result<T>> {
 
   override fun enqueue(callback: Callback<Result<T>>) {
     delegate.enqueue(object : Callback<T> {
@@ -66,12 +62,11 @@ class ResultCall<T>(private val delegate: Call<T>) : Call<Result<out T>> {
         Result.failure(IOException("Unexpected error: ${response.errorBody()?.string()}"))
       }
       Response.success(result)
-    } catch (e: IOException) {
-      Response.success(Result.failure(e))
     } catch (e: Exception) {
       Response.success(Result.failure(e))
     }
   }
+
   override fun isExecuted(): Boolean = delegate.isExecuted
 
   override fun clone(): ResultCall<T> = ResultCall(delegate.clone())
@@ -84,5 +79,3 @@ class ResultCall<T>(private val delegate: Call<T>) : Call<Result<out T>> {
 
   override fun timeout(): Timeout = delegate.timeout()
 }
-
-

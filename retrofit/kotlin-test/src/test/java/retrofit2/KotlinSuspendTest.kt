@@ -26,9 +26,12 @@ import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.SocketPolicy.DISCONNECT_AFTER_REQUEST
 import okhttp3.mockwebserver.SocketPolicy.NO_RESPONSE
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
+import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.helpers.ToStringConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.HEAD
@@ -37,8 +40,6 @@ import java.io.IOException
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 import kotlin.coroutines.CoroutineContext
-import org.junit.Assert.*
-import retrofit2.converter.gson.GsonConverterFactory
 
 class KotlinSuspendTest {
   @get:Rule val server = MockWebServer()
@@ -61,7 +62,7 @@ class KotlinSuspendTest {
     ): String
   }
 
-  data class User(val id:Int,val name: String,val email:String)
+  data class User(val id: Int, val name: String, val email: String)
 
   @Test fun body() {
     val retrofit = Retrofit.Builder()
@@ -375,9 +376,9 @@ class KotlinSuspendTest {
       .build()
     val service = retrofit.create(Service::class.java)
     val result = service.getUser()
-    assertEquals(1, result.getOrNull()?.id)
-    assertEquals("John Doe", result.getOrNull()?.name)
-    assertEquals("john.doe@example.com", result.getOrNull()?.email)
+    assertTrue(result.getOrThrow().id == 1)
+    assertTrue(result.getOrThrow().name == "John Doe")
+    assertTrue(result.getOrThrow().email == "john.doe@example.com")
   }
 
   @Test
@@ -390,7 +391,7 @@ class KotlinSuspendTest {
       .build()
     val service = retrofit.create(Service::class.java)
     val result = service.getUser()
-    assert(result.isFailure)
+    assertTrue(result.isFailure)
   }
 
 
