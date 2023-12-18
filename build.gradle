@@ -16,6 +16,7 @@ buildscript {
 
 plugins {
   alias(libs.plugins.kotlin.jvm) apply false
+  alias(libs.plugins.kotlin.serialization) apply false
   alias(libs.plugins.dokka) apply false
   alias(libs.plugins.errorprone) apply false
   alias(libs.plugins.mavenPublish) apply false
@@ -92,7 +93,7 @@ subprojects {
     if (Jvm.current().javaVersion.isJava11Compatible() && !Jvm.current().javaVersion.isCompatibleWith(JavaVersion.VERSION_16)) {
       project.apply plugin: 'com.github.sherter.google-java-format'
       googleJavaFormat {
-        toolVersion = '1.17.0'
+        toolVersion = '1.18.1'
 
         // By default, the GJF plugin includes all Java folders inside the project directory. This
         // does not work well with nested projects, especially when you want to exclude them.

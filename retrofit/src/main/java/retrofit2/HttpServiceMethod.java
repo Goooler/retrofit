@@ -55,11 +55,19 @@ abstract class HttpServiceMethod<ResponseT, ReturnT> extends ServiceMethod<Retur
         continuationWantsResponse = true;
         adapterType = new Utils.ParameterizedTypeImpl(null, Call.class, responseType);
       } else {
+        if (getRawType(responseType) == Call.class) {
+          throw methodError(
+              method,
+              "Suspend functions should not return Call, as they already execute asynchronously.\n" +
+                "Change its return type to %s", Utils.getParameterUpperBound(0, (ParameterizedType) responseType));
+        }
+
         if ((getRawType(responseType).isAssignableFrom(Result.class))) {
           adapterType = responseType;
         } else {
           adapterType = new Utils.ParameterizedTypeImpl(null, Call.class, responseType);
         }
+
         continuationIsUnit = Utils.isUnit(responseType);
         // TODO figure out if type is nullable or not
         // Metadata metadata = method.getDeclaringClass().getAnnotation(Metadata.class)
@@ -248,7 +256,10 @@ abstract class HttpServiceMethod<ResponseT, ReturnT> extends ServiceMethod<Retur
         } else {
           return KotlinExtensions.await(call, continuation);
         }
-      } catch (Exception e) {
+      } catch (VirtualMachineError | ThreadDeath | LinkageError e) {
+        // Do not attempt to capture fatal throwables. This list is derived RxJava's `throwIfFatal`.
+        throw e;
+      } catch (Throwable e) {
         return KotlinExtensions.suspendAndThrow(e, continuation);
       }
     }

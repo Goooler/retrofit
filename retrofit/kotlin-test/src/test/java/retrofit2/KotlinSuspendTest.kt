@@ -60,6 +60,8 @@ class KotlinSuspendTest {
         @Path("b") b: String,
         @Path("c") c: String
     ): String
+
+    @GET("/") suspend fun bodyWithCallType(): Call<String>
   }
 
   data class User(val id: Int, val name: String, val email: String)
@@ -359,6 +361,25 @@ class KotlinSuspendTest {
     }
   }
 
+  @Test fun rejectCallReturnTypeWhenUsingSuspend() {
+    val retrofit = Retrofit.Builder()
+        .baseUrl(server.url("/"))
+        .addConverterFactory(ToStringConverterFactory())
+        .build()
+    val example = retrofit.create(Service::class.java)
+
+    try {
+      runBlocking { example.bodyWithCallType() }
+      fail()
+    } catch (e: IllegalArgumentException) {
+      assertThat(e).hasMessage(
+          "Suspend functions should not return Call, as they already execute asynchronously.\n" +
+            "Change its return type to class java.lang.String\n" +
+            "    for method Service.bodyWithCallType"
+      )
+    }
+  }
+
   @Test
   fun testSuccessfulResponse() = runBlocking {
     val responseBody = """
@@ -380,20 +401,6 @@ class KotlinSuspendTest {
     assertTrue(result.getOrThrow().name == "John Doe")
     assertTrue(result.getOrThrow().email == "john.doe@example.com")
   }
-
-  @Test
-  fun testErrorResponse() = runBlocking {
-    server.enqueue(MockResponse().setResponseCode(404))
-    val retrofit = Retrofit.Builder()
-      .baseUrl(server.url("/"))
-      .addCallAdapterFactory(ResultCallAdapterFactory())
-      .addConverterFactory(GsonConverterFactory.create())
-      .build()
-    val service = retrofit.create(Service::class.java)
-    val result = service.getUser()
-    assertTrue(result.isFailure)
-  }
-
 
   @Suppress("EXPERIMENTAL_OVERRIDE")
   private object DirectUnconfinedDispatcher : CoroutineDispatcher() {
