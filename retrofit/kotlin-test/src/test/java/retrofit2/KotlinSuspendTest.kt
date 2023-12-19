@@ -50,9 +50,7 @@ class KotlinSuspendTest {
     @GET("/") suspend fun response(): Response<String>
     @GET("/") suspend fun unit()
     @HEAD("/") suspend fun headUnit()
-
-    @GET("user")
-    suspend fun getUser(): Result<User>
+    @GET("user") suspend fun getUser(): Result<User>
 
     @GET("/{a}/{b}/{c}")
     suspend fun params(
@@ -380,14 +378,13 @@ class KotlinSuspendTest {
     }
   }
 
-  @Test
-  fun testSuccessfulResponse() = runBlocking {
+  @Test fun testSuccessfulResponse() {
     val responseBody = """
-            {
-                "id": 1,
-                "name": "John Doe",
-                "email": "john.doe@example.com"
-            }
+          {
+            "id": 1,
+            "name": "John Doe",
+            "email": "john.doe@example.com"
+          }
         """.trimIndent()
     server.enqueue(MockResponse().setResponseCode(200).setBody(responseBody))
     val retrofit = Retrofit.Builder()
@@ -396,10 +393,12 @@ class KotlinSuspendTest {
       .addConverterFactory(GsonConverterFactory.create())
       .build()
     val service = retrofit.create(Service::class.java)
-    val result = service.getUser()
-    assertTrue(result.getOrThrow().id == 1)
-    assertTrue(result.getOrThrow().name == "John Doe")
-    assertTrue(result.getOrThrow().email == "john.doe@example.com")
+    runBlocking {
+      val result = service.getUser()
+      assertThat(result.getOrThrow().id).isEqualTo(1)
+      assertThat(result.getOrThrow().name).isEqualTo("John Doe")
+      assertThat(result.getOrThrow().email).isEqualTo("john.doe@example.com")
+    }
   }
 
   @Suppress("EXPERIMENTAL_OVERRIDE")

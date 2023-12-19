@@ -20,8 +20,7 @@ class ResultCallAdapterFactory : CallAdapter.Factory() {
       "Result must have a generic type (e.g., Result<T>)"
     }
 
-    val responseType = getParameterUpperBound(0, returnType)
-    return ResultCallAdapter<Any>(responseType)
+    return ResultCallAdapter<Any>(getParameterUpperBound(0, returnType))
   }
 }
 
@@ -73,7 +72,7 @@ class ResultCall<T>(private val delegate: Call<T>) : Call<Result<T>> {
 
   override fun isCanceled(): Boolean = delegate.isCanceled
 
-  override fun cancel() = delegate.cancel()
+  override fun cancel(): Unit = delegate.cancel()
 
   override fun request(): Request = delegate.request()
 

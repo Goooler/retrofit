@@ -43,7 +43,7 @@ abstract class HttpServiceMethod<ResponseT, ReturnT> extends ServiceMethod<Retur
     boolean continuationIsUnit = false;
 
     Annotation[] annotations = method.getAnnotations();
-    Type adapterType;
+    final Type adapterType;
     if (isKotlinSuspendFunction) {
       Type[] parameterTypes = method.getGenericParameterTypes();
       Type responseType =
@@ -55,14 +55,15 @@ abstract class HttpServiceMethod<ResponseT, ReturnT> extends ServiceMethod<Retur
         continuationWantsResponse = true;
         adapterType = new Utils.ParameterizedTypeImpl(null, Call.class, responseType);
       } else {
-        if (getRawType(responseType) == Call.class) {
+        Class<?> rawType = getRawType(responseType);
+        if (rawType == Call.class) {
           throw methodError(
               method,
               "Suspend functions should not return Call, as they already execute asynchronously.\n" +
                 "Change its return type to %s", Utils.getParameterUpperBound(0, (ParameterizedType) responseType));
         }
 
-        if ((getRawType(responseType).isAssignableFrom(Result.class))) {
+        if (rawType == Result.class) {
           adapterType = responseType;
         } else {
           adapterType = new Utils.ParameterizedTypeImpl(null, Call.class, responseType);
