@@ -51,6 +51,7 @@ class KotlinSuspendTest {
     @GET("/") suspend fun unit()
     @HEAD("/") suspend fun headUnit()
     @GET("user") suspend fun getUser(): Result<User>
+    @HEAD("user") suspend fun headUser(): Result<Unit>
 
     @GET("/{a}/{b}/{c}")
     suspend fun params(
@@ -378,7 +379,7 @@ class KotlinSuspendTest {
     }
   }
 
-  @Test fun testSuccessfulResponse() {
+  @Test fun returnResultType() {
     val responseBody = """
           {
             "id": 1,
@@ -386,18 +387,34 @@ class KotlinSuspendTest {
             "email": "john.doe@example.com"
           }
         """.trimIndent()
-    server.enqueue(MockResponse().setResponseCode(200).setBody(responseBody))
     val retrofit = Retrofit.Builder()
       .baseUrl(server.url("/"))
       .addCallAdapterFactory(ResultCallAdapterFactory())
       .addConverterFactory(GsonConverterFactory.create())
       .build()
     val service = retrofit.create(Service::class.java)
+
+    // Successful response with body.
     runBlocking {
+      server.enqueue(MockResponse().setResponseCode(200).setBody(responseBody))
       val result = service.getUser()
       assertThat(result.getOrThrow().id).isEqualTo(1)
       assertThat(result.getOrThrow().name).isEqualTo("John Doe")
       assertThat(result.getOrThrow().email).isEqualTo("john.doe@example.com")
+    }
+    // Successful response without body.
+    runBlocking {
+      server.enqueue(MockResponse())
+      val result = service.headUser()
+      assertThat(result.isSuccess).isTrue()
+      assertThat(result.getOrThrow()).isEqualTo(Unit)
+    }
+    // Error response without body.
+    runBlocking {
+      server.enqueue(MockResponse().setResponseCode(400))
+      val result = service.getUser()
+      assertThat(result.isFailure).isTrue()
+      assertThat(result.exceptionOrNull()).isInstanceOf(HttpException::class.java)
     }
   }
 
