@@ -12,9 +12,7 @@ class ResultCallAdapterFactory private constructor() : CallAdapter.Factory() {
     annotations: Array<Annotation>,
     retrofit: Retrofit
   ): CallAdapter<*, *>? {
-    if (getRawType(returnType) != Result::class.java) {
-      return null
-    }
+    if (getRawType(returnType) != Result::class.java) return null
 
     check(returnType is ParameterizedType) {
       "Result must have a generic type (e.g., Result<T>)"
@@ -45,7 +43,7 @@ class ResultCall<T>(private val delegate: Call<T>) : Call<Result<T>> {
       override fun onResponse(call: Call<T>, response: Response<T>) {
         val result = runCatching {
           if (response.isSuccessful) {
-            response.body() ?: error("Response body is null")
+            response.body() ?: error("Response $response body is null.")
           } else {
             throw HttpException(response)
           }
@@ -63,7 +61,7 @@ class ResultCall<T>(private val delegate: Call<T>) : Call<Result<T>> {
     val result = runCatching {
       val response = delegate.execute()
       if (response.isSuccessful) {
-        response.body() ?: error("Response body is null")
+        response.body() ?: error("Response $response body is null.")
       } else {
         throw IOException("Unexpected error: ${response.errorBody()?.string()}")
       }
