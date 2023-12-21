@@ -379,7 +379,7 @@ class KotlinSuspendTest {
     }
   }
 
-  @Test fun returnResultType() {
+  @Test fun returnResultType() = runBlocking {
     val responseBody = """
           {
             "id": 1,
@@ -395,34 +395,35 @@ class KotlinSuspendTest {
     val service = retrofit.create(Service::class.java)
 
     // Successful response with body.
-    runBlocking {
-      server.enqueue(MockResponse().setResponseCode(200).setBody(responseBody))
-      val result = service.getUser()
+    server.enqueue(MockResponse().setResponseCode(200).setBody(responseBody))
+    service.getUser().let { result ->
       assertThat(result.getOrThrow().id).isEqualTo(1)
       assertThat(result.getOrThrow().name).isEqualTo("John Doe")
       assertThat(result.getOrThrow().email).isEqualTo("john.doe@example.com")
     }
+
     // Successful response without body.
-    runBlocking {
-      server.enqueue(MockResponse())
-      val result = service.headUser()
+    server.enqueue(MockResponse())
+    service.headUser().let { result ->
       assertThat(result.isSuccess).isTrue()
       assertThat(result.getOrThrow()).isEqualTo(Unit)
     }
+
     // Error response without body.
-    runBlocking {
-      server.enqueue(MockResponse().setResponseCode(400))
-      val result = service.getUser()
+    server.enqueue(MockResponse().setResponseCode(400))
+    service.getUser().let { result ->
       assertThat(result.isFailure).isTrue()
       assertThat(result.exceptionOrNull()).isInstanceOf(HttpException::class.java)
     }
+
     // Network error.
-    runBlocking {
-      server.shutdown()
-      val result = service.getUser()
+    server.shutdown()
+    service.getUser().let { result ->
       assertThat(result.isFailure).isTrue()
       assertThat(result.exceptionOrNull()).isInstanceOf(IOException::class.java)
     }
+
+    Unit // Return type of runBlocking is Unit.
   }
 
   @Suppress("EXPERIMENTAL_OVERRIDE")
