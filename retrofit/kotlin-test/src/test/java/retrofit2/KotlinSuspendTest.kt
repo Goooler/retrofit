@@ -397,6 +397,7 @@ class KotlinSuspendTest {
     // Successful response with body.
     server.enqueue(MockResponse().setResponseCode(200).setBody(responseBody))
     service.getUser().let { result ->
+      assertThat(result.isSuccess).isTrue()
       assertThat(result.getOrThrow().id).isEqualTo(1)
       assertThat(result.getOrThrow().name).isEqualTo("John Doe")
       assertThat(result.getOrThrow().email).isEqualTo("john.doe@example.com")
