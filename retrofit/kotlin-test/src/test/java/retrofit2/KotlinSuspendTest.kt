@@ -411,10 +411,12 @@ class KotlinSuspendTest {
     }
 
     // Error response without body.
-    server.enqueue(MockResponse().setResponseCode(400))
+    server.enqueue(MockResponse().setResponseCode(404))
     service.getUser().let { result ->
       assertThat(result.isFailure).isTrue()
-      assertThat(result.exceptionOrNull()).isInstanceOf(HttpException::class.java)
+      assertThat(result.exceptionOrNull())
+        .isInstanceOf(HttpException::class.java)
+        .hasMessage("HTTP 404 Client Error")
     }
 
     // Network error.
