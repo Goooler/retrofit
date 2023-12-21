@@ -44,7 +44,8 @@ class ResultCall<T>(private val delegate: Call<T>) : Call<Result<T>> {
     delegate.enqueue(object : Callback<T> {
       override fun onResponse(call: Call<T>, response: Response<T>) {
         val result = if (response.isSuccessful) {
-          Result.success(response.body()!!)
+          val body = response.body() ?: error("Response body is null")
+          Result.success(body)
         } else {
           Result.failure(HttpException(response))
         }
@@ -61,7 +62,8 @@ class ResultCall<T>(private val delegate: Call<T>) : Call<Result<T>> {
     return try {
       val response = delegate.execute()
       val result = if (response.isSuccessful) {
-        Result.success(response.body()!!)
+        val body = response.body() ?: error("Response body is null")
+        Result.success(body)
       } else {
         Result.failure(IOException("Unexpected error: ${response.errorBody()?.string()}"))
       }
