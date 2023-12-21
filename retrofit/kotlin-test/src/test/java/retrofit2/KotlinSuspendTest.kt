@@ -416,6 +416,13 @@ class KotlinSuspendTest {
       assertThat(result.isFailure).isTrue()
       assertThat(result.exceptionOrNull()).isInstanceOf(HttpException::class.java)
     }
+    // Network error.
+    runBlocking {
+      server.shutdown()
+      val result = service.getUser()
+      assertThat(result.isFailure).isTrue()
+      assertThat(result.exceptionOrNull()).isInstanceOf(IOException::class.java)
+    }
   }
 
   @Suppress("EXPERIMENTAL_OVERRIDE")
