@@ -31,6 +31,7 @@ import org.junit.Assert.fail
 import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
+import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.helpers.ToStringConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.HEAD
@@ -49,6 +50,8 @@ class KotlinSuspendTest {
     @GET("/") suspend fun response(): Response<String>
     @GET("/") suspend fun unit()
     @HEAD("/") suspend fun headUnit()
+    @GET("user") suspend fun getUser(): Result<User>
+    @HEAD("user") suspend fun headUser(): Result<Unit>
 
     @GET("/{a}/{b}/{c}")
     suspend fun params(
@@ -59,6 +62,8 @@ class KotlinSuspendTest {
 
     @GET("/") suspend fun bodyWithCallType(): Call<String>
   }
+
+  data class User(val id: Int, val name: String, val email: String)
 
   @Test fun body() {
     val retrofit = Retrofit.Builder()
@@ -372,6 +377,56 @@ class KotlinSuspendTest {
             "    for method Service.bodyWithCallType"
       )
     }
+  }
+
+  @Test fun returnResultType() = runBlocking {
+    val responseBody = """
+          {
+            "id": 1,
+            "name": "John Doe",
+            "email": "john.doe@example.com"
+          }
+        """.trimIndent()
+    val retrofit = Retrofit.Builder()
+      .baseUrl(server.url("/"))
+      .addCallAdapterFactory(ResultCallAdapterFactory.create())
+      .addConverterFactory(GsonConverterFactory.create())
+      .build()
+    val service = retrofit.create(Service::class.java)
+
+    // Successful response with body.
+    server.enqueue(MockResponse().setBody(responseBody))
+    service.getUser().let { result ->
+      assertThat(result.isSuccess).isTrue()
+      assertThat(result.getOrThrow().id).isEqualTo(1)
+      assertThat(result.getOrThrow().name).isEqualTo("John Doe")
+      assertThat(result.getOrThrow().email).isEqualTo("john.doe@example.com")
+    }
+
+    // Successful response without body.
+    server.enqueue(MockResponse())
+    service.headUser().let { result ->
+      assertThat(result.isSuccess).isTrue()
+      assertThat(result.getOrThrow()).isEqualTo(Unit)
+    }
+
+    // Error response without body.
+    server.enqueue(MockResponse().setResponseCode(404))
+    service.getUser().let { result ->
+      assertThat(result.isFailure).isTrue()
+      assertThat(result.exceptionOrNull())
+        .isInstanceOf(HttpException::class.java)
+        .hasMessage("HTTP 404 Client Error")
+    }
+
+    // Network error.
+    server.shutdown()
+    service.getUser().let { result ->
+      assertThat(result.isFailure).isTrue()
+      assertThat(result.exceptionOrNull()).isInstanceOf(IOException::class.java)
+    }
+
+    Unit // Return type of runBlocking is Unit.
   }
 
   @Suppress("EXPERIMENTAL_OVERRIDE")
