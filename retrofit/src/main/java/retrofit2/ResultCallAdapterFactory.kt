@@ -6,7 +6,7 @@ import java.lang.reflect.Type
 import okhttp3.Request
 import okio.Timeout
 
-class ResultCallAdapterFactory : CallAdapter.Factory() {
+class ResultCallAdapterFactory private constructor() : CallAdapter.Factory() {
   override fun get(
     returnType: Type,
     annotations: Array<Annotation>,
@@ -21,6 +21,11 @@ class ResultCallAdapterFactory : CallAdapter.Factory() {
     }
 
     return ResultCallAdapter<Any>(getParameterUpperBound(0, returnType))
+  }
+
+  companion object {
+    @JvmStatic
+    fun create(): CallAdapter.Factory = ResultCallAdapterFactory()
   }
 }
 

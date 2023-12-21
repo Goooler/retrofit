@@ -389,7 +389,7 @@ class KotlinSuspendTest {
         """.trimIndent()
     val retrofit = Retrofit.Builder()
       .baseUrl(server.url("/"))
-      .addCallAdapterFactory(ResultCallAdapterFactory())
+      .addCallAdapterFactory(ResultCallAdapterFactory.create())
       .addConverterFactory(GsonConverterFactory.create())
       .build()
     val service = retrofit.create(Service::class.java)
