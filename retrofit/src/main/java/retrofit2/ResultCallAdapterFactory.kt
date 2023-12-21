@@ -43,11 +43,12 @@ class ResultCall<T>(private val delegate: Call<T>) : Call<Result<T>> {
   override fun enqueue(callback: Callback<Result<T>>) {
     delegate.enqueue(object : Callback<T> {
       override fun onResponse(call: Call<T>, response: Response<T>) {
-        val result = if (response.isSuccessful) {
-          val body = response.body() ?: error("Response body is null")
-          Result.success(body)
-        } else {
-          Result.failure(HttpException(response))
+        val result = runCatching {
+          if (response.isSuccessful) {
+            response.body() ?: error("Response body is null")
+          } else {
+            throw HttpException(response)
+          }
         }
         callback.onResponse(this@ResultCall, Response.success(result))
       }
@@ -59,18 +60,15 @@ class ResultCall<T>(private val delegate: Call<T>) : Call<Result<T>> {
   }
 
   override fun execute(): Response<Result<T>> {
-    return try {
+    val result = runCatching {
       val response = delegate.execute()
-      val result = if (response.isSuccessful) {
-        val body = response.body() ?: error("Response body is null")
-        Result.success(body)
+      if (response.isSuccessful) {
+        response.body() ?: error("Response body is null")
       } else {
-        Result.failure(IOException("Unexpected error: ${response.errorBody()?.string()}"))
+        throw IOException("Unexpected error: ${response.errorBody()?.string()}")
       }
-      Response.success(result)
-    } catch (e: Exception) {
-      Response.success(Result.failure(e))
     }
+    return Response.success(result)
   }
 
   override fun isExecuted(): Boolean = delegate.isExecuted
