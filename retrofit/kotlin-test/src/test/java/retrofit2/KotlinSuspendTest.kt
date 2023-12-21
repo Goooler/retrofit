@@ -395,7 +395,7 @@ class KotlinSuspendTest {
     val service = retrofit.create(Service::class.java)
 
     // Successful response with body.
-    server.enqueue(MockResponse().setResponseCode(200).setBody(responseBody))
+    server.enqueue(MockResponse().setBody(responseBody))
     service.getUser().let { result ->
       assertThat(result.isSuccess).isTrue()
       assertThat(result.getOrThrow().id).isEqualTo(1)
