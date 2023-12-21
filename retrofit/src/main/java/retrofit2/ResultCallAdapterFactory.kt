@@ -12,9 +12,7 @@ class ResultCallAdapterFactory private constructor() : CallAdapter.Factory() {
     annotations: Array<Annotation>,
     retrofit: Retrofit
   ): CallAdapter<*, *>? {
-    if (getRawType(returnType) != Result::class.java) {
-      return null
-    }
+    if (getRawType(returnType) != Result::class.java) return null
 
     check(returnType is ParameterizedType) {
       "Result must have a generic type (e.g., Result<T>)"
@@ -29,7 +27,7 @@ class ResultCallAdapterFactory private constructor() : CallAdapter.Factory() {
   }
 }
 
-class ResultCallAdapter<T>(
+class ResultCallAdapter<T : Any>(
   private val responseType: Type
 ) : CallAdapter<T, Call<Result<T>>> {
 
@@ -38,7 +36,7 @@ class ResultCallAdapter<T>(
   override fun adapt(call: Call<T>): Call<Result<T>> = ResultCall(call)
 }
 
-class ResultCall<T>(private val delegate: Call<T>) : Call<Result<T>> {
+class ResultCall<T : Any>(private val delegate: Call<T>) : Call<Result<T>> {
 
   override fun enqueue(callback: Callback<Result<T>>) {
     delegate.enqueue(object : Callback<T> {
