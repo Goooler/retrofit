@@ -429,6 +429,31 @@ class KotlinSuspendTest {
     Unit // Return type of runBlocking is Unit.
   }
 
+  @Test fun usesCoroutineContextForCallFactory() {
+    val okHttpClient = OkHttpClient()
+    var callFactoryThread: Thread? = null
+    val outerContextThread: Thread
+    val retrofit = Retrofit.Builder()
+      .baseUrl(server.url("/"))
+      .callFactory {
+        callFactoryThread = Thread.currentThread()
+        okHttpClient.newCall(it)
+      }
+      .addConverterFactory(ToStringConverterFactory())
+      .build()
+    val example = retrofit.create(Service::class.java)
+
+    server.enqueue(MockResponse().setBody("Hi"))
+
+    runBlocking {
+      outerContextThread = Thread.currentThread()
+      example.body()
+    }
+
+    assertThat(callFactoryThread).isNotNull
+    assertThat(outerContextThread).isNotEqualTo(callFactoryThread)
+  }
+
   @Suppress("EXPERIMENTAL_OVERRIDE")
   private object DirectUnconfinedDispatcher : CoroutineDispatcher() {
     override fun isDispatchNeeded(context: CoroutineContext): Boolean = false
