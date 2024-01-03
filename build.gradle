@@ -127,5 +127,15 @@ subprojects {
     mavenPublish {
       sonatypeHost = "S01"
     }
+
+    publishing {
+      repositories {
+        maven {
+          name = "githubPackages"
+          url = "https://maven.pkg.github.com/Goooler/retrofit"
+          credentials(PasswordCredentials)
+        }
+      }
+    }
   }
 }
