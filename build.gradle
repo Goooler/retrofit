@@ -129,14 +129,14 @@ subprojects {
     }
   }
 
-  ext.applyOsgi = { project ->
-    project.plugins.apply(libs.plugins.bnd.builder.get().pluginId)
+  ext.applyOsgi = {
+    plugins.apply(libs.plugins.bnd.builder.get().pluginId)
 
-    project.sourceSets {
+    sourceSets {
       osgi
     }
 
-    project.jar { t ->
+    jar { t ->
       t.setClasspath(project.sourceSets.osgi['compileClasspath'] + project.sourceSets.main['compileClasspath'])
     }
   }

@@ -1,6 +1,7 @@
 apply plugin: 'java-library'
 apply plugin: 'org.jetbrains.kotlin.jvm'
 apply plugin: 'com.vanniktech.maven.publish'
+
 applyOsgi(this)
 
 jar {
@@ -27,11 +28,14 @@ jar {
 configurations {
   osgiTestDeploy
 }
-task copyOsgiTestDeployment(type: Copy) {
+
+def copyOsgiTestDeployment = tasks.register('copyOsgiTestDeployment', Copy) {
   from configurations.osgiTestDeploy
   into "${buildDir}/resources/test/retrofit2/osgi/deployments"
 }
-tasks.test.dependsOn(copyOsgiTestDeployment)
+tasks.named('test') {
+  dependsOn(copyOsgiTestDeployment)
+}
 
 dependencies {
   api libs.okhttp

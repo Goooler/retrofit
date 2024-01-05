@@ -36,23 +36,24 @@ import org.junit.Test;
 
 public final class OsgiTest {
   /** Each is the Bundle-SymbolicName of an OkHttp module's OSGi configuration. */
-  private static final List<String> REQUIRED_BUNDLES = Arrays.asList(
-      "com.squareup.retrofit2",
-      "com.squareup.retrofit2.adapter.guava",
-      "com.squareup.retrofit2.adapter.java8",
-      "com.squareup.retrofit2.adapter.rxjava",
-      "com.squareup.retrofit2.adapter.rxjava2",
-      "com.squareup.retrofit2.adapter.rxjava3",
-      "com.squareup.retrofit2.adapter.scala",
-      "com.squareup.retrofit2.converter.gson",
-      "com.squareup.retrofit2.converter.jackson",
-      "com.squareup.retrofit2.converter.jaxb",
-      "com.squareup.retrofit2.converter.protobuf",
-      "com.squareup.retrofit2.converter.scalars"
-  );
+  private static final List<String> REQUIRED_BUNDLES =
+      Arrays.asList(
+          "com.squareup.retrofit2",
+          "com.squareup.retrofit2.adapter.guava",
+          "com.squareup.retrofit2.adapter.java8",
+          "com.squareup.retrofit2.adapter.rxjava",
+          "com.squareup.retrofit2.adapter.rxjava2",
+          "com.squareup.retrofit2.adapter.rxjava3",
+          "com.squareup.retrofit2.adapter.scala",
+          "com.squareup.retrofit2.converter.gson",
+          "com.squareup.retrofit2.converter.jackson",
+          "com.squareup.retrofit2.converter.jaxb",
+          "com.squareup.retrofit2.converter.protobuf",
+          "com.squareup.retrofit2.converter.scalars");
 
   /** Equinox must also be on the testing classpath. */
   private static final String RESOLVE_OSGI_FRAMEWORK = "org.eclipse.osgi";
+
   private static final String RESOLVE_JAVA_VERSION = "JavaSE-1.8";
   private static final String REPO_NAME = "OsgiTest";
 
@@ -76,7 +77,7 @@ public final class OsgiTest {
   @Test
   public void testMainModuleWithSiblings() throws Exception {
     try (Workspace workspace = createWorkspace();
-         Bndrun bndRun = createBndRun(workspace)) {
+        Bndrun bndRun = createBndRun(workspace)) {
       bndRun.resolve(false, false);
     }
   }
@@ -87,10 +88,20 @@ public final class OsgiTest {
     repoDir.mkdirs();
 
     Workspace workspace = new Workspace(workspaceDir, bndDir.getName());
-    workspace.setProperty(Constants.PLUGIN + "." + REPO_NAME, ""
-        + LocalIndexedRepo.class.getName()
-        + "; " + LocalIndexedRepo.PROP_NAME + " = '" + REPO_NAME + "'"
-        + "; " + LocalIndexedRepo.PROP_LOCAL_DIR + " = '" + repoDir + "'");
+    workspace.setProperty(
+        Constants.PLUGIN + "." + REPO_NAME,
+        ""
+            + LocalIndexedRepo.class.getName()
+            + "; "
+            + LocalIndexedRepo.PROP_NAME
+            + " = '"
+            + REPO_NAME
+            + "'"
+            + "; "
+            + LocalIndexedRepo.PROP_LOCAL_DIR
+            + " = '"
+            + repoDir
+            + "'");
     workspace.refresh();
     prepareWorkspace(workspace);
     return workspace;
@@ -107,9 +118,10 @@ public final class OsgiTest {
   private Bndrun createBndRun(Workspace workspace) throws Exception {
     // Creating the run require string. It will always use the latest version of each bundle
     // available in the repository.
-    String runRequireString = REQUIRED_BUNDLES.stream()
-        .map(s -> "osgi.identity;filter:='(osgi.identity=" + s + ")'")
-        .collect(Collectors.joining(","));
+    String runRequireString =
+        REQUIRED_BUNDLES.stream()
+            .map(s -> "osgi.identity;filter:='(osgi.identity=" + s + ")'")
+            .collect(Collectors.joining(","));
 
     BndEditModel bndEditModel = new BndEditModel(workspace);
     // Temporary project to satisfy bnd API.
@@ -157,9 +169,6 @@ public final class OsgiTest {
   private static void deleteDirectory(File dir) throws IOException {
     if (!dir.exists()) return;
 
-    Files.walk(dir.toPath())
-        .filter(Files::isRegularFile)
-        .map(Path::toFile)
-        .forEach(File::delete);
+    Files.walk(dir.toPath()).filter(Files::isRegularFile).map(Path::toFile).forEach(File::delete);
   }
 }

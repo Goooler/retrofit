@@ -1,6 +1,7 @@
 apply plugin: 'java-library'
 apply plugin: 'com.google.protobuf'
 apply plugin: 'com.vanniktech.maven.publish'
+
 applyOsgi(this)
 
 jar {
