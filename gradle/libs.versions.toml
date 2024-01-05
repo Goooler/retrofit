@@ -18,6 +18,7 @@ okhttp = "3.14.9"
 protobuf = "3.25.1"
 robovm = "2.3.14"
 kotlinx-serialization = "1.6.2"
+bnd = "5.1.2"
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
@@ -28,11 +29,13 @@ mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.18.0" }
 protobuf = { id = "com.google.protobuf", version = "0.9.4" }
 animalsniffer = { id = "ru.vyarus.animalsniffer", version = "1.7.1" }
 googleJavaFormat = { id = "com.github.sherter.google-java-format", version = "0.9" }
+bnd-builder = { id = "biz.aQute.bnd.builder", version.ref = "bnd" }
 
 [libraries]
 androidPlugin = { module = "com.android.tools.build:gradle", version = "4.2.2" }
 robovmPlugin = { module = "com.mobidevelop.robovm:robovm-gradle-plugin", version.ref = "robovm" }
 kotlinStdLib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
+kotlinStdlibOsgi = { module = "org.jetbrains.kotlin:kotlin-osgi-bundle", version.ref = "kotlin" }
 kotlinCoroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version = "1.7.3" }
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
@@ -66,3 +69,5 @@ jsoup = { module = "org.jsoup:jsoup", version = "1.17.1" }
 robovm = { module = "com.mobidevelop.robovm:robovm-rt", version.ref = "robovm" }
 errorproneCore = { module = "com.google.errorprone:error_prone_core", version = "2.10.0" }
 errorproneJavac = { module = "com.google.errorprone:javac", version = "9+181-r4173-1" }
+bndResolve = { module = "biz.aQute.bnd:biz.aQute.resolve", version.ref = "bnd" }
+equinox = "org.eclipse.platform:org.eclipse.osgi:3.16.0"

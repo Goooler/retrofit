@@ -23,6 +23,7 @@ plugins {
   alias(libs.plugins.protobuf) apply false
   alias(libs.plugins.animalsniffer) apply false
   alias(libs.plugins.googleJavaFormat) apply false
+  alias(libs.plugins.bnd.builder) apply false
 }
 
 subprojects {
@@ -140,7 +141,7 @@ subprojects {
   }
 
   ext.applyOsgi = { project ->
-    project.apply plugin: 'biz.aQute.bnd.builder'
+    project.plugins.apply(libs.plugins.bnd.builder.get().pluginId)
 
     project.sourceSets {
       osgi
