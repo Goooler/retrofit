@@ -20,9 +20,9 @@ import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
+import static retrofit2.TestingUtils.buildRequest;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.net.URI;
 import java.util.Arrays;
@@ -41,7 +41,6 @@ import okio.Buffer;
 import org.junit.Ignore;
 import org.junit.Test;
 import retrofit2.helpers.NullObjectConverterFactory;
-import retrofit2.helpers.ToStringConverterFactory;
 import retrofit2.http.Body;
 import retrofit2.http.DELETE;
 import retrofit2.http.Field;
@@ -610,10 +609,10 @@ public final class RequestFactoryTest {
   }
 
   @Test
-  public void headerMapMustBeAMap() {
+  public void headerMapMustBeAMapOrHeaders() {
     class Example {
       @GET("/")
-      Call<ResponseBody> method(@HeaderMap List<String> headers) {
+      Call<ResponseBody> method(@HeaderMap okhttp3.Headers headers, @HeaderMap List<String> headerMap) {
         return null;
       }
     }
@@ -623,7 +622,7 @@ public final class RequestFactoryTest {
     } catch (IllegalArgumentException e) {
       assertThat(e)
           .hasMessage(
-              "@HeaderMap parameter type must be Map. (parameter #1)\n    for method Example.method");
+              "@HeaderMap parameter type must be Map or Headers. (parameter #2)\n    for method Example.method");
     }
   }
 
@@ -784,6 +783,29 @@ public final class RequestFactoryTest {
   }
 
   @Test
+  public void getWithHeaderMapAllowingUnsafeNonAsciiValues() {
+    class Example {
+      @GET("/search")
+      Call<ResponseBody> method(
+          @HeaderMap(allowUnsafeNonAsciiValues = true) Map<String, Object> headers) {
+        return null;
+      }
+    }
+
+    Map<String, Object> headers = new LinkedHashMap<>();
+    headers.put("Accept", "text/plain");
+    headers.put("Title", "Kein plötzliches");
+
+    Request request = buildRequest(Example.class, headers);
+    assertThat(request.method()).isEqualTo("GET");
+    assertThat(request.url().toString()).isEqualTo("http://example.com/search");
+    assertThat(request.body()).isNull();
+    assertThat(request.headers().size()).isEqualTo(2);
+    assertThat(request.header("Accept")).isEqualTo("text/plain");
+    assertThat(request.header("Title")).isEqualTo("Kein plötzliches");
+  }
+
+  @Test
   public void twoBodies() {
     class Example {
       @PUT("/") //
@@ -851,7 +873,7 @@ public final class RequestFactoryTest {
   }
 
   @Test
-  public void head() {
+  public void headVoid() {
     class Example {
       @HEAD("/foo/bar/") //
       Call<Void> method() {
@@ -879,7 +901,8 @@ public final class RequestFactoryTest {
       fail();
     } catch (IllegalArgumentException e) {
       assertThat(e)
-          .hasMessage("HEAD method must use Void as response type.\n    for method Example.method");
+          .hasMessage(
+              "HEAD method must use Void or Unit as response type.\n    for method Example.method");
     }
   }
 
@@ -1357,7 +1380,7 @@ public final class RequestFactoryTest {
       }
     }
 
-    List<Object> values = Arrays.<Object>asList(1, 2, null, "three", "1");
+    List<Object> values = Arrays.asList(1, 2, null, "three", "1");
     Request request = buildRequest(Example.class, values);
     assertThat(request.method()).isEqualTo("GET");
     assertThat(request.headers().size()).isZero();
@@ -1453,7 +1476,7 @@ public final class RequestFactoryTest {
       }
     }
 
-    List<Object> values = Arrays.<Object>asList(1, 2, null, "three", "1");
+    List<Object> values = Arrays.asList(1, 2, null, "three", "1");
     Request request = buildRequest(Example.class, values);
     assertThat(request.method()).isEqualTo("GET");
     assertThat(request.headers().size()).isZero();
@@ -2634,7 +2657,7 @@ public final class RequestFactoryTest {
       }
     }
 
-    List<Object> values = Arrays.<Object>asList("foo", "bar", null, 3);
+    List<Object> values = Arrays.asList("foo", "bar", null, 3);
     Request request = buildRequest(Example.class, values, "kat");
     assertBody(request.body(), "foo=foo&foo=bar&foo=3&kit=kat");
   }
@@ -2833,6 +2856,27 @@ public final class RequestFactoryTest {
   }
 
   @Test
+  public void simpleHeadersAllowingUnsafeNonAsciiValues() {
+    class Example {
+      @GET("/foo/bar/")
+      @Headers(
+          value = {"ping: pong", "title: Kein plötzliches"},
+          allowUnsafeNonAsciiValues = true)
+      Call<ResponseBody> method() {
+        return null;
+      }
+    }
+    Request request = buildRequest(Example.class);
+    assertThat(request.method()).isEqualTo("GET");
+    okhttp3.Headers headers = request.headers();
+    assertThat(headers.size()).isEqualTo(2);
+    assertThat(headers.get("ping")).isEqualTo("pong");
+    assertThat(headers.get("title")).isEqualTo("Kein plötzliches");
+    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/");
+    assertThat(request.body()).isNull();
+  }
+
+  @Test
   public void headersDoNotOverwriteEachOther() {
     class Example {
       @GET("/foo/bar/")
@@ -2887,6 +2931,26 @@ public final class RequestFactoryTest {
     assertThat(headers.size()).isEqualTo(2);
     assertThat(headers.get("ping")).isEqualTo("pong");
     assertThat(headers.get("kit")).isEqualTo("kat");
+    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/");
+    assertThat(request.body()).isNull();
+  }
+
+  @Test
+  public void headerParamAllowingUnsafeNonAsciiValues() {
+    class Example {
+      @GET("/foo/bar/") //
+      @Headers("ping: pong") //
+      Call<ResponseBody> method(
+          @Header(value = "title", allowUnsafeNonAsciiValues = true) String kit) {
+        return null;
+      }
+    }
+    Request request = buildRequest(Example.class, "Kein plötzliches");
+    assertThat(request.method()).isEqualTo("GET");
+    okhttp3.Headers headers = request.headers();
+    assertThat(headers.size()).isEqualTo(2);
+    assertThat(headers.get("ping")).isEqualTo("pong");
+    assertThat(headers.get("title")).isEqualTo("Kein plötzliches");
     assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/");
     assertThat(request.body()).isNull();
   }
@@ -2991,7 +3055,20 @@ public final class RequestFactoryTest {
   }
 
   @Test
-  public void contentTypeAnnotationHeaderAddsHeaderWithNoBody() {
+  public void contentTypeAnnotationHeaderAddsHeaderWithNoBodyGet() {
+    class Example {
+      @GET("/") //
+      @Headers("Content-Type: text/not-plain") //
+      Call<ResponseBody> method() {
+        return null;
+      }
+    }
+    Request request = buildRequest(Example.class);
+    assertThat(request.headers().get("Content-Type")).isEqualTo("text/not-plain");
+  }
+
+  @Test
+  public void contentTypeAnnotationHeaderAddsHeaderWithNoBodyDelete() {
     class Example {
       @DELETE("/") //
       @Headers("Content-Type: text/not-plain") //
@@ -3263,38 +3340,12 @@ public final class RequestFactoryTest {
     }
   }
 
-  static <T> Request buildRequest(Class<T> cls, Retrofit.Builder builder, Object... args) {
-    okhttp3.Call.Factory callFactory =
-        request -> {
-          throw new UnsupportedOperationException("Not implemented");
-        };
-
-    Retrofit retrofit = builder.callFactory(callFactory).build();
-
-    Method method = TestingUtils.onlyMethod(cls);
-    try {
-      return RequestFactory.parseAnnotations(retrofit, method).create(args);
-    } catch (RuntimeException e) {
-      throw e;
-    } catch (Exception e) {
-      throw new AssertionError(e);
-    }
-  }
-
-  static <T> Request buildRequest(Class<T> cls, Object... args) {
-    Retrofit.Builder retrofitBuilder =
-        new Retrofit.Builder()
-            .baseUrl("http://example.com/")
-            .addConverterFactory(new ToStringConverterFactory());
-
-    return buildRequest(cls, retrofitBuilder, args);
-  }
-
   static void assertMalformedRequest(Class<?> cls, Object... args) {
     try {
       Request request = buildRequest(cls, args);
       fail("expected a malformed request but was " + request);
     } catch (IllegalArgumentException expected) {
+      // Ignored
     }
   }
 }

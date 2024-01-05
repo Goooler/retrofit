@@ -147,6 +147,13 @@ public final class Response<T> {
     return rawResponse.isSuccessful();
   }
 
+  /**
+   * Returns true if this response redirects to another resource.
+   */
+  public boolean isRedirect() {
+    return rawResponse.isRedirect();
+  }
+
   /** The deserialized response body of a {@linkplain #isSuccessful() successful} response. */
   public @Nullable T body() {
     return body;

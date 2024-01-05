@@ -1,6 +1,11 @@
 Retrofit
 ========
 
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.goooler.retrofit2/retrofit)](https://central.sonatype.com/search?q=g%3Aio.github.goooler.retrofit2)
+[![Sonatype Nexus (Snapshots)](https://img.shields.io/nexus/s/io.github.goooler.retrofit2/retrofit?&server=https://s01.oss.sonatype.org/)](https://s01.oss.sonatype.org/content/repositories/snapshots/io/github/goooler/retrofit2)
+[![Main](https://github.com/Goooler/retrofit/actions/workflows/build.yml/badge.svg?branch=trunk&event=push)](https://github.com/Goooler/retrofit/actions/workflows/build.yml?query=event%3Apush+branch%3Atrunk)
+[![License](https://img.shields.io/github/license/Goooler/retrofit.svg)](LICENSE.txt)
+
 A type-safe HTTP client for Android and Java.
 
 For more information please see [the website][1].
@@ -46,7 +51,7 @@ License
 
  [1]: https://square.github.io/retrofit/
  [2]: https://search.maven.org/remote_content?g=com.squareup.retrofit2&a=retrofit&v=LATEST
- [snap]: https://oss.sonatype.org/content/repositories/snapshots/
+ [snap]: https://s01.oss.sonatype.org/content/repositories/snapshots/
  [proguard file]: https://github.com/square/retrofit/blob/master/retrofit/src/main/resources/META-INF/proguard/retrofit2.pro
- [okhttp proguard]: https://square.github.io/okhttp/#r8-proguard
+ [okhttp proguard]: https://square.github.io/okhttp/r8_proguard/
  [okio proguard]: https://square.github.io/okio/#r8-proguard

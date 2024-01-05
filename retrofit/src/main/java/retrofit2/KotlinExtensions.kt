@@ -25,11 +25,12 @@ import kotlin.coroutines.intrinsics.intercepted
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.withContext
 
-inline fun <reified T> Retrofit.create(): T = create(T::class.java)
+inline fun <reified T: Any> Retrofit.create(): T = create(T::class.java)
 
-suspend fun <T : Any> Call<T>.await(): T {
-  return suspendCancellableCoroutine { continuation ->
+suspend fun <T : Any> Call<T>.await(): T = withContext(Dispatchers.Default) {
+  suspendCancellableCoroutine { continuation ->
     continuation.invokeOnCancellation {
       cancel()
     }
@@ -62,8 +63,8 @@ suspend fun <T : Any> Call<T>.await(): T {
 }
 
 @JvmName("awaitNullable")
-suspend fun <T : Any> Call<T?>.await(): T? {
-  return suspendCancellableCoroutine { continuation ->
+suspend fun <T : Any> Call<T?>.await(): T? = withContext(Dispatchers.Default) {
+  suspendCancellableCoroutine { continuation ->
     continuation.invokeOnCancellation {
       cancel()
     }
@@ -83,8 +84,14 @@ suspend fun <T : Any> Call<T?>.await(): T? {
   }
 }
 
-suspend fun <T> Call<T>.awaitResponse(): Response<T> {
-  return suspendCancellableCoroutine { continuation ->
+@JvmName("awaitUnit")
+suspend fun Call<Unit>.await() {
+  @Suppress("UNCHECKED_CAST")
+  (this as Call<Unit?>).await()
+}
+
+suspend fun <T> Call<T>.awaitResponse(): Response<T> = withContext(Dispatchers.Default) {
+  suspendCancellableCoroutine { continuation ->
     continuation.invokeOnCancellation {
       cancel()
     }
@@ -109,11 +116,11 @@ suspend fun <T> Call<T>.awaitResponse(): Response<T> {
  * The implementation is derived from:
  * https://github.com/Kotlin/kotlinx.coroutines/pull/1667#issuecomment-556106349
  */
-internal suspend fun Exception.suspendAndThrow(): Nothing {
+internal suspend fun Throwable.suspendAndThrow(): Nothing {
   suspendCoroutineUninterceptedOrReturn<Nothing> { continuation ->
-    Dispatchers.Default.dispatch(continuation.context, Runnable {
+    Dispatchers.Default.dispatch(continuation.context) {
       continuation.intercepted().resumeWithException(this@suspendAndThrow)
-    })
+    }
     COROUTINE_SUSPENDED
   }
 }

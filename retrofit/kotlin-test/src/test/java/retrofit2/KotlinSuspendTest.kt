@@ -16,7 +16,6 @@
 package retrofit2
 
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
@@ -32,8 +31,10 @@ import org.junit.Assert.fail
 import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
+import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.helpers.ToStringConverterFactory
 import retrofit2.http.GET
+import retrofit2.http.HEAD
 import retrofit2.http.Path
 import java.io.IOException
 import java.lang.reflect.ParameterizedType
@@ -47,6 +48,10 @@ class KotlinSuspendTest {
     @GET("/") suspend fun body(): String
     @GET("/") suspend fun bodyNullable(): String?
     @GET("/") suspend fun response(): Response<String>
+    @GET("/") suspend fun unit()
+    @HEAD("/") suspend fun headUnit()
+    @GET("user") suspend fun getUser(): Result<User>
+    @HEAD("user") suspend fun headUser(): Result<Unit>
 
     @GET("/{a}/{b}/{c}")
     suspend fun params(
@@ -54,7 +59,11 @@ class KotlinSuspendTest {
         @Path("b") b: String,
         @Path("c") c: String
     ): String
+
+    @GET("/") suspend fun bodyWithCallType(): Call<String>
   }
+
+  data class User(val id: Int, val name: String, val email: String)
 
   @Test fun body() {
     val retrofit = Retrofit.Builder()
@@ -177,6 +186,27 @@ class KotlinSuspendTest {
       fail()
     } catch (e: IOException) {
     }
+  }
+
+  @Test fun unit() {
+    val retrofit = Retrofit.Builder().baseUrl(server.url("/")).build()
+    val example = retrofit.create(Service::class.java)
+    server.enqueue(MockResponse().setBody("Unit"))
+    runBlocking { example.unit() }
+  }
+
+  @Test fun unitNullableBody() {
+    val retrofit = Retrofit.Builder().baseUrl(server.url("/")).build()
+    val example = retrofit.create(Service::class.java)
+    server.enqueue(MockResponse().setResponseCode(204))
+    runBlocking { example.unit() }
+  }
+
+  @Test fun headUnit() {
+    val retrofit = Retrofit.Builder().baseUrl(server.url("/")).build()
+    val example = retrofit.create(Service::class.java)
+    server.enqueue(MockResponse())
+    runBlocking { example.headUnit() }
   }
 
   @Test fun params() {
@@ -328,6 +358,100 @@ class KotlinSuspendTest {
         }
       }
     }
+  }
+
+  @Test fun rejectCallReturnTypeWhenUsingSuspend() {
+    val retrofit = Retrofit.Builder()
+        .baseUrl(server.url("/"))
+        .addConverterFactory(ToStringConverterFactory())
+        .build()
+    val example = retrofit.create(Service::class.java)
+
+    try {
+      runBlocking { example.bodyWithCallType() }
+      fail()
+    } catch (e: IllegalArgumentException) {
+      assertThat(e).hasMessage(
+          "Suspend functions should not return Call, as they already execute asynchronously.\n" +
+            "Change its return type to class java.lang.String\n" +
+            "    for method Service.bodyWithCallType"
+      )
+    }
+  }
+
+  @Test fun returnResultType() = runBlocking {
+    val responseBody = """
+          {
+            "id": 1,
+            "name": "John Doe",
+            "email": "john.doe@example.com"
+          }
+        """.trimIndent()
+    val retrofit = Retrofit.Builder()
+      .baseUrl(server.url("/"))
+      .addCallAdapterFactory(ResultCallAdapterFactory.create())
+      .addConverterFactory(GsonConverterFactory.create())
+      .build()
+    val service = retrofit.create(Service::class.java)
+
+    // Successful response with body.
+    server.enqueue(MockResponse().setBody(responseBody))
+    service.getUser().let { result ->
+      assertThat(result.isSuccess).isTrue()
+      assertThat(result.getOrThrow().id).isEqualTo(1)
+      assertThat(result.getOrThrow().name).isEqualTo("John Doe")
+      assertThat(result.getOrThrow().email).isEqualTo("john.doe@example.com")
+    }
+
+    // Successful response without body.
+    server.enqueue(MockResponse())
+    service.headUser().let { result ->
+      assertThat(result.isSuccess).isTrue()
+      assertThat(result.getOrThrow()).isEqualTo(Unit)
+    }
+
+    // Error response without body.
+    server.enqueue(MockResponse().setResponseCode(404))
+    service.getUser().let { result ->
+      assertThat(result.isFailure).isTrue()
+      assertThat(result.exceptionOrNull())
+        .isInstanceOf(HttpException::class.java)
+        .hasMessage("HTTP 404 Client Error")
+    }
+
+    // Network error.
+    server.shutdown()
+    service.getUser().let { result ->
+      assertThat(result.isFailure).isTrue()
+      assertThat(result.exceptionOrNull()).isInstanceOf(IOException::class.java)
+    }
+
+    Unit // Return type of runBlocking is Unit.
+  }
+
+  @Test fun usesCoroutineContextForCallFactory() {
+    val okHttpClient = OkHttpClient()
+    var callFactoryThread: Thread? = null
+    val outerContextThread: Thread
+    val retrofit = Retrofit.Builder()
+      .baseUrl(server.url("/"))
+      .callFactory {
+        callFactoryThread = Thread.currentThread()
+        okHttpClient.newCall(it)
+      }
+      .addConverterFactory(ToStringConverterFactory())
+      .build()
+    val example = retrofit.create(Service::class.java)
+
+    server.enqueue(MockResponse().setBody("Hi"))
+
+    runBlocking {
+      outerContextThread = Thread.currentThread()
+      example.body()
+    }
+
+    assertThat(callFactoryThread).isNotNull
+    assertThat(outerContextThread).isNotEqualTo(callFactoryThread)
   }
 
   @Suppress("EXPERIMENTAL_OVERRIDE")

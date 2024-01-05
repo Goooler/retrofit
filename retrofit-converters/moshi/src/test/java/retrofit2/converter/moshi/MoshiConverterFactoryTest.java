@@ -30,7 +30,7 @@ import com.squareup.moshi.ToJson;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -268,7 +268,7 @@ public final class MoshiConverterFactoryTest {
       call.execute();
       fail();
     } catch (JsonDataException e) {
-      assertThat(e).hasMessage("Cannot skip unexpected NAME at $.");
+      assertThat(e).hasMessage("Cannot skip unexpected NAME at $.taco");
     }
   }
 
@@ -290,7 +290,7 @@ public final class MoshiConverterFactoryTest {
     Buffer responseBody =
         new Buffer()
             .write(ByteString.decodeHex("FEFF"))
-            .writeString("{\"theName\":\"value\"}", Charset.forName("UTF-16"));
+            .writeString("{\"theName\":\"value\"}", StandardCharsets.UTF_16);
     MockResponse malformedResponse = new MockResponse().setBody(responseBody);
     server.enqueue(malformedResponse);
 
