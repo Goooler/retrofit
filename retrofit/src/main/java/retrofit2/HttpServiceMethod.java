@@ -59,8 +59,9 @@ abstract class HttpServiceMethod<ResponseT, ReturnT> extends ServiceMethod<Retur
         if (rawType == Call.class) {
           throw methodError(
               method,
-              "Suspend functions should not return Call, as they already execute asynchronously.\n" +
-                "Change its return type to %s", Utils.getParameterUpperBound(0, (ParameterizedType) responseType));
+              "Suspend functions should not return Call, as they already execute asynchronously.\n"
+                  + "Change its return type to %s",
+              Utils.getParameterUpperBound(0, (ParameterizedType) responseType));
         }
 
         if (rawType == Result.class) {
