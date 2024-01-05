@@ -10,7 +10,7 @@ class ResultCallAdapterFactory private constructor() : CallAdapter.Factory() {
   override fun get(
     returnType: Type,
     annotations: Array<Annotation>,
-    retrofit: Retrofit
+    retrofit: Retrofit,
   ): CallAdapter<*, *>? {
     if (getRawType(returnType) != Result::class.java) return null
 
@@ -28,7 +28,7 @@ class ResultCallAdapterFactory private constructor() : CallAdapter.Factory() {
 }
 
 class ResultCallAdapter<T>(
-  private val responseType: Type
+  private val responseType: Type,
 ) : CallAdapter<T, Call<Result<T>>> {
 
   override fun responseType(): Type = responseType
