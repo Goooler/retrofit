@@ -25,9 +25,11 @@ import kotlin.coroutines.intrinsics.intercepted
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 
-inline fun <reified T: Any> Retrofit.create(): T = create(T::class.java)
+inline fun <reified T : Any> Retrofit.create(): T = create(T::class.java)
 
 suspend fun <T : Any> Call<T>.await(): T = withContext(Dispatchers.Default) {
   suspendCancellableCoroutine { continuation ->
@@ -41,11 +43,10 @@ suspend fun <T : Any> Call<T>.await(): T = withContext(Dispatchers.Default) {
           if (body == null) {
             val invocation = call.request().tag(Invocation::class.java)!!
             val method = invocation.method()
-            val e = KotlinNullPointerException("Response from " +
-                method.declaringClass.name +
-                '.' +
-                method.name +
-                " was null but response body type was declared as non-null")
+            val e = KotlinNullPointerException(
+              "Response from ${method.declaringClass.name}.${method.name}" +
+                " was null but response body type was declared as non-null",
+            )
             continuation.resumeWithException(e)
           } else {
             continuation.resume(body)
