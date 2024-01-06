@@ -50,22 +50,20 @@ dependencies {
   testImplementation libs.assertj
   testImplementation libs.guava
   testImplementation libs.mockwebserver
+
   testImplementation libs.kotlinStdLib
   testImplementation libs.kotlinCoroutines
   testImplementation libs.bndResolve
+
   osgiTestDeploy libs.equinox
   osgiTestDeploy libs.kotlinOsgi
-  osgiTestDeploy projects.retrofitAdapters.guava
-  osgiTestDeploy projects.retrofitAdapters.java8
-  osgiTestDeploy projects.retrofitAdapters.rxjava
-  osgiTestDeploy projects.retrofitAdapters.rxjava2
-  osgiTestDeploy projects.retrofitAdapters.rxjava3
-  osgiTestDeploy projects.retrofitAdapters.scala
-  osgiTestDeploy projects.retrofitConverters.gson
-  osgiTestDeploy projects.retrofitConverters.jackson
-  osgiTestDeploy projects.retrofitConverters.jaxb
-  osgiTestDeploy projects.retrofitConverters.protobuf
-  osgiTestDeploy projects.retrofitConverters.scalars
+  rootProject.subprojects { subproject ->
+    subproject.plugins.withId(libs.plugins.bnd.builder.get().pluginId) {
+      if (subproject != this.project) {
+        osgiTestDeploy subproject
+      }
+    }
+  }
 }
 
 jar {
