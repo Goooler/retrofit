@@ -29,8 +29,9 @@ configurations {
 
 def copyOsgiTestDeployment = tasks.register('copyOsgiTestDeployment', Copy) {
   from configurations.osgiTestDeploy
-  into "${buildDir}/resources/test/retrofit2/osgi/deployments"
+  into layout.buildDirectory.dir("resources/test/retrofit2/osgi/deployments")
 }
+
 tasks.named('test') {
   dependsOn(copyOsgiTestDeployment)
 }
@@ -63,12 +64,6 @@ dependencies {
         osgiTestDeploy subproject
       }
     }
-  }
-}
-
-jar {
-  manifest {
-    attributes 'Automatic-Module-Name': 'retrofit2'
   }
 }
 
