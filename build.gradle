@@ -136,7 +136,7 @@ subprojects {
       osgi
     }
 
-    tasks.named('jar') {
+    tasks.named('jar', Jar) {
       bundle {
         setClasspath(sourceSets.osgi.compileClasspath + sourceSets.main.compileClasspath)
         bnd(bndProperties)
