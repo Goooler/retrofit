@@ -2,17 +2,15 @@ apply plugin: 'java-library'
 apply plugin: 'com.google.protobuf'
 apply plugin: 'com.vanniktech.maven.publish'
 
-applyOsgi(this)
-
-jar {
+applyOsgi(
   // MANIFEST.MF, including OSGi bnd instructions.
-  bnd '''
+  '''
   Export-Package: retrofit2.converter.protobuf
   Import-Package: *
   Automatic-Module-Name: retrofit2.converter.protobuf
   Bundle-SymbolicName: com.squareup.retrofit2.converter.protobuf
   '''
-}
+)
 
 dependencies {
   api projects.retrofit

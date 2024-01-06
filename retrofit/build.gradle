@@ -2,15 +2,13 @@ apply plugin: 'java-library'
 apply plugin: 'org.jetbrains.kotlin.jvm'
 apply plugin: 'com.vanniktech.maven.publish'
 
-applyOsgi(this)
-
-jar {
+applyOsgi(
   // MANIFEST.MF, including OSGi bnd instructions.
   // We export retrofit2.internal for our own modules use.
   // The packages of all optional dependencies must be explicitly specified.
   // kotlinx.coroutines is optional for now because there is no OSGi metadata available
   // and it's only necessary when kotlin is used
-  bnd '''
+  '''
   Export-Package: \
   retrofit2,\
   retrofit2.http,\
@@ -22,7 +20,7 @@ jar {
   Automatic-Module-Name: retrofit2
   Bundle-SymbolicName: com.squareup.retrofit2
   '''
-}
+)
 
 // Expose OSGi jars to the test environment.
 configurations {
@@ -39,7 +37,6 @@ tasks.named('test') {
 
 dependencies {
   api libs.okhttp
-  osgiApi libs.kotlinStdlibOsgi
 
   compileOnly libs.android
   compileOnly libs.kotlinStdLib
@@ -57,7 +54,7 @@ dependencies {
   testImplementation libs.kotlinCoroutines
   testImplementation libs.bndResolve
   osgiTestDeploy libs.equinox
-  osgiTestDeploy libs.kotlinStdlibOsgi
+  osgiTestDeploy libs.kotlinOsgi
   osgiTestDeploy projects.retrofitAdapters.guava
   osgiTestDeploy projects.retrofitAdapters.java8
   osgiTestDeploy projects.retrofitAdapters.rxjava

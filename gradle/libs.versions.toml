@@ -18,7 +18,7 @@ okhttp = "3.14.9"
 protobuf = "3.25.1"
 robovm = "2.3.14"
 kotlinx-serialization = "1.6.2"
-bnd = "5.1.2"
+bnd = "6.4.0"
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
@@ -35,7 +35,7 @@ spotless = "com.diffplug.spotless:6.23.3"
 androidPlugin = { module = "com.android.tools.build:gradle", version = "4.2.2" }
 robovmPlugin = { module = "com.mobidevelop.robovm:robovm-gradle-plugin", version.ref = "robovm" }
 kotlinStdLib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
-kotlinStdlibOsgi = { module = "org.jetbrains.kotlin:kotlin-osgi-bundle", version.ref = "kotlin" }
+kotlinOsgi = { module = "org.jetbrains.kotlin:kotlin-osgi-bundle", version.ref = "kotlin" }
 kotlinCoroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version = "1.7.3" }
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }

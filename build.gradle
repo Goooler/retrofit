@@ -1,5 +1,6 @@
 import net.ltgt.gradle.errorprone.CheckSeverity
 import org.gradle.internal.jvm.Jvm
+import aQute.bnd.gradle.BundleTaskExtension
 
 buildscript {
   dependencies {
@@ -129,15 +130,30 @@ subprojects {
     }
   }
 
-  ext.applyOsgi = {
+  ext.applyOsgi = { String... bndProperties ->
     plugins.apply(libs.plugins.bnd.builder.get().pluginId)
 
     sourceSets {
       osgi
     }
 
-    jar { t ->
-      t.setClasspath(project.sourceSets.osgi['compileClasspath'] + project.sourceSets.main['compileClasspath'])
+    def jarTask = tasks.jar
+    def bundleExtension = jarTask.extensions.findByType(BundleTaskExtension)
+    if (bundleExtension == null) {
+      bundleExtension = jarTask.extensions.create(BundleTaskExtension.NAME, BundleTaskExtension.class, jarTask)
+    }
+    bundleExtension.with {
+      setClasspath(sourceSets.osgi.compileClasspath + sourceSets.main.compileClasspath)
+      bnd(bndProperties)
+    }
+    jarTask.doLast {
+      bundleExtension.buildAction().execute(this)
+    }
+
+    plugins.withId(libs.plugins.kotlin.jvm.get().pluginId) {
+      dependencies {
+        osgiApi libs.kotlinOsgi
+      }
     }
   }
 }

@@ -1,17 +1,15 @@
 apply plugin: 'java-library'
 apply plugin: 'com.vanniktech.maven.publish'
 
-applyOsgi(this)
-
-jar {
+applyOsgi(
   // MANIFEST.MF, including OSGi bnd instructions.
-  bnd '''
+  '''
   Export-Package: retrofit.converter.guava
   Import-Package: *
   Automatic-Module-Name: retrofit2.converter.guava
   Bundle-SymbolicName: com.squareup.retrofit2.converter.guava
   '''
-}
+)
 
 dependencies {
   api projects.retrofit

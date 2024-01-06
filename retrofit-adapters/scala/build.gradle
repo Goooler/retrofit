@@ -1,17 +1,15 @@
 apply plugin: 'java-library'
 apply plugin: 'com.vanniktech.maven.publish'
 
-applyOsgi(this)
-
-jar {
+applyOsgi(
   // MANIFEST.MF, including OSGi bnd instructions.
-  bnd '''
+  '''
   Export-Package: retrofit2.adapter.scala
   Import-Package: *
   Automatic-Module-Name: retrofit2.adapter.scala
   Bundle-SymbolicName: com.squareup.retrofit2.adapter.scala
   '''
-}
+)
 
 dependencies {
   api projects.retrofit

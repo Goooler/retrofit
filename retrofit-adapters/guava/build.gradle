@@ -1,11 +1,9 @@
 apply plugin: 'java-library'
 apply plugin: 'com.vanniktech.maven.publish'
 
-applyOsgi(this)
-
-jar {
+applyOsgi(
   // MANIFEST.MF, including OSGi bnd instructions.
-  bnd '''
+  '''
   Export-Package: retrofit2.adapter.guava
   Import-Package: \
   org.checkerframework.checker.*;resolution:=optional,\
@@ -13,7 +11,7 @@ jar {
   Automatic-Module-Name: retrofit2.adapter.guava
   Bundle-SymbolicName: com.squareup.retrofit2.adapter.guava
   '''
-}
+)
 
 dependencies {
   api projects.retrofit
