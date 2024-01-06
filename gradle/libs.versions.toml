@@ -18,7 +18,7 @@ okhttp = "3.14.9"
 protobuf = "3.25.1"
 robovm = "2.3.14"
 kotlinx-serialization = "1.6.2"
-bnd = "7.0.0"
+bnd = "6.4.0"
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
