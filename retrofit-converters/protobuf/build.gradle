@@ -8,7 +8,7 @@ applyOsgi(
   Export-Package: retrofit2.converter.protobuf
   Import-Package: *
   Automatic-Module-Name: retrofit2.converter.protobuf
-  Bundle-SymbolicName: com.squareup.retrofit2.converter.protobuf
+  Bundle-SymbolicName: io.github.goooler.retrofit2.converter.protobuf
   '''
 )
 

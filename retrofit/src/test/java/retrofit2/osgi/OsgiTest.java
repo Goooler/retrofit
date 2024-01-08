@@ -38,18 +38,18 @@ public final class OsgiTest {
   /** Each is the Bundle-SymbolicName of an OkHttp module's OSGi configuration. */
   private static final List<String> REQUIRED_BUNDLES =
       Arrays.asList(
-          "com.squareup.retrofit2",
-          "com.squareup.retrofit2.adapter.guava",
-          "com.squareup.retrofit2.adapter.java8",
-          "com.squareup.retrofit2.adapter.rxjava",
-          "com.squareup.retrofit2.adapter.rxjava2",
-          "com.squareup.retrofit2.adapter.rxjava3",
-          "com.squareup.retrofit2.adapter.scala",
-          "com.squareup.retrofit2.converter.gson",
-          "com.squareup.retrofit2.converter.jackson",
-          "com.squareup.retrofit2.converter.jaxb",
-          "com.squareup.retrofit2.converter.protobuf",
-          "com.squareup.retrofit2.converter.scalars");
+          "io.github.goooler.retrofit2",
+          "io.github.goooler.retrofit2.adapter.guava",
+          "io.github.goooler.retrofit2.adapter.java8",
+          "io.github.goooler.retrofit2.adapter.rxjava",
+          "io.github.goooler.retrofit2.adapter.rxjava2",
+          "io.github.goooler.retrofit2.adapter.rxjava3",
+          "io.github.goooler.retrofit2.adapter.scala",
+          "io.github.goooler.retrofit2.converter.gson",
+          "io.github.goooler.retrofit2.converter.jackson",
+          "io.github.goooler.retrofit2.converter.jaxb",
+          "io.github.goooler.retrofit2.converter.protobuf",
+          "io.github.goooler.retrofit2.converter.scalars");
 
   /** Equinox must also be on the testing classpath. */
   private static final String RESOLVE_OSGI_FRAMEWORK = "org.eclipse.osgi";

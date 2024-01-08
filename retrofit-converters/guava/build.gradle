@@ -7,7 +7,7 @@ applyOsgi(
   Export-Package: retrofit.converter.guava
   Import-Package: *
   Automatic-Module-Name: retrofit2.converter.guava
-  Bundle-SymbolicName: com.squareup.retrofit2.converter.guava
+  Bundle-SymbolicName: io.github.goooler.retrofit2.converter.guava
   '''
 )
 

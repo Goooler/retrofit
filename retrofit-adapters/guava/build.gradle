@@ -9,7 +9,7 @@ applyOsgi(
   org.checkerframework.checker.*;resolution:=optional,\
   *
   Automatic-Module-Name: retrofit2.adapter.guava
-  Bundle-SymbolicName: com.squareup.retrofit2.adapter.guava
+  Bundle-SymbolicName: io.github.goooler.retrofit2.adapter.guava
   '''
 )
 

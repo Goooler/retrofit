@@ -18,7 +18,7 @@ applyOsgi(
   kotlinx.coroutines.*;resolution:=optional,\
   *
   Automatic-Module-Name: retrofit2
-  Bundle-SymbolicName: com.squareup.retrofit2
+  Bundle-SymbolicName: io.github.goooler.retrofit2
   '''
 )
 
