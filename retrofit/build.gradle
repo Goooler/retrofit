@@ -52,8 +52,6 @@ dependencies {
   testImplementation libs.guava
   testImplementation libs.mockwebserver
 
-  testImplementation libs.kotlinStdLib
-  testImplementation libs.kotlinCoroutines
   testImplementation libs.bndResolve
 
   osgiTestDeploy libs.equinox
