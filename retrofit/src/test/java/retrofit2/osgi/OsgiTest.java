@@ -46,10 +46,17 @@ public final class OsgiTest {
           "io.github.goooler.retrofit2.adapter.rxjava3",
           "io.github.goooler.retrofit2.adapter.scala",
           "io.github.goooler.retrofit2.converter.gson",
+          "io.github.goooler.retrofit2.converter.guava",
           "io.github.goooler.retrofit2.converter.jackson",
           "io.github.goooler.retrofit2.converter.jaxb",
+          "io.github.goooler.retrofit2.converter.jaxb3",
+          "io.github.goooler.retrofit2.converter.kotlinx.serialization",
+          "io.github.goooler.retrofit2.converter.moshi",
           "io.github.goooler.retrofit2.converter.protobuf",
-          "io.github.goooler.retrofit2.converter.scalars");
+          "io.github.goooler.retrofit2.converter.scalars",
+          "io.github.goooler.retrofit2.converter.simplexml",
+          "io.github.goooler.retrofit2.converter.wire",
+          "io.github.goooler.retrofit2.mock");
 
   /** Equinox must also be on the testing classpath. */
   private static final String RESOLVE_OSGI_FRAMEWORK = "org.eclipse.osgi";

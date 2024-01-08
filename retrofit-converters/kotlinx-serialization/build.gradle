@@ -2,6 +2,16 @@ apply plugin: 'org.jetbrains.kotlin.jvm'
 apply plugin: 'org.jetbrains.kotlin.plugin.serialization'
 apply plugin: 'com.vanniktech.maven.publish'
 
+applyOsgi(
+  // MANIFEST.MF, including OSGi bnd instructions.
+  '''
+  Export-Package: com.jakewharton.retrofit2.converter.kotlinx.serialization
+  Import-Package: *
+  Automatic-Module-Name: com.jakewharton.retrofit2.converter.kotlinx.serialization
+  Bundle-SymbolicName: io.github.goooler.retrofit2.converter.kotlinx-serialization
+  '''
+)
+
 dependencies {
   api projects.retrofit
   api libs.kotlinx.serialization.core

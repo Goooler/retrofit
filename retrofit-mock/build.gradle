@@ -2,6 +2,16 @@ apply plugin: 'java-library'
 apply plugin: 'org.jetbrains.kotlin.jvm'
 apply plugin: 'com.vanniktech.maven.publish'
 
+applyOsgi(
+  // MANIFEST.MF, including OSGi bnd instructions.
+  '''
+  Export-Package: retrofit2.mock
+  Import-Package: *
+  Automatic-Module-Name: retrofit2.mock
+  Bundle-SymbolicName: io.github.goooler.retrofit2.mock
+  '''
+)
+
 dependencies {
   api projects.retrofit
   compileOnly libs.kotlinStdLib
@@ -11,10 +21,4 @@ dependencies {
   testImplementation libs.assertj
   testImplementation libs.kotlinStdLib
   testImplementation libs.kotlinCoroutines
-}
-
-jar {
-  manifest {
-    attributes  'Automatic-Module-Name': 'retrofit2.mock'
-  }
 }

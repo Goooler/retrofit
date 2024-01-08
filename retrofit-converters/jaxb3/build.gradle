@@ -1,6 +1,16 @@
 apply plugin: 'java-library'
 apply plugin: 'com.vanniktech.maven.publish'
 
+applyOsgi(
+  // MANIFEST.MF, including OSGi bnd instructions.
+  '''
+  Export-Package: retrofit2.converter.jaxb3
+  Import-Package: *
+  Automatic-Module-Name: retrofit2.converter.jaxb3
+  Bundle-SymbolicName: io.github.goooler.retrofit2.converter.jaxb3
+  '''
+)
+
 dependencies {
   api projects.retrofit
   api libs.jaxb3Api
@@ -11,10 +21,4 @@ dependencies {
   testImplementation libs.assertj
   testImplementation libs.mockwebserver
   testImplementation libs.findBugsAnnotations
-}
-
-jar {
-  manifest {
-    attributes  'Automatic-Module-Name': 'retrofit2.converter.jaxb3'
-  }
 }
