@@ -97,8 +97,7 @@ public final class OsgiTest {
     Workspace workspace = new Workspace(workspaceDir, bndDir.getName());
     workspace.setProperty(
         Constants.PLUGIN + "." + REPO_NAME,
-        ""
-            + LocalIndexedRepo.class.getName()
+        LocalIndexedRepo.class.getName()
             + "; "
             + LocalIndexedRepo.PROP_NAME
             + " = '"
