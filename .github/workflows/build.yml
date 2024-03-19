@@ -80,7 +80,7 @@ jobs:
 
   publish:
     runs-on: ubuntu-latest
-    if: github.repository == 'square/retrofit' && github.ref == 'refs/heads/trunk'
+    if: github.repository == 'Goooler/retrofit' && github.ref == 'refs/heads/trunk'
     needs:
       - jvm
       - android

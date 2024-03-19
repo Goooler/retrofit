@@ -1,6 +1,11 @@
 Retrofit
 ========
 
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.goooler.retrofit2/retrofit)](https://central.sonatype.com/search?q=g%3Aio.github.goooler.retrofit2)
+[![Sonatype Nexus (Snapshots)](https://img.shields.io/nexus/s/io.github.goooler.retrofit2/retrofit?&server=https://s01.oss.sonatype.org/)](https://s01.oss.sonatype.org/content/repositories/snapshots/io/github/goooler/retrofit2)
+[![Main](https://github.com/Goooler/retrofit/actions/workflows/build.yml/badge.svg?branch=trunk&event=push)](https://github.com/Goooler/retrofit/actions/workflows/build.yml?query=event%3Apush+branch%3Atrunk)
+[![License](https://img.shields.io/github/license/Goooler/retrofit.svg)](LICENSE.txt)
+
 A type-safe HTTP client for Android and Java.
 
 For more information please see [the website][1].
