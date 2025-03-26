@@ -1,0 +1,12 @@
+apply plugin: 'org.jetbrains.kotlin.jvm'
+apply plugin: 'com.vanniktech.maven.publish'
+apply plugin: 'org.jetbrains.dokka'
+
+dependencies {
+  api projects.retrofit
+  api libs.kotlinx.coroutines
+
+  testImplementation libs.junit
+  testImplementation libs.okhttp.mockwebserver
+  testImplementation projects.retrofit.testHelpers
+}

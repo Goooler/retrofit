@@ -26,6 +26,7 @@ include ':retrofit-response-type-keeper'
 
 include ':retrofit-adapters:guava'
 include ':retrofit-adapters:java8'
+include ':retrofit-adapters:kotlinx-coroutines'
 include ':retrofit-adapters:rxjava'
 include ':retrofit-adapters:rxjava2'
 include ':retrofit-adapters:rxjava3'
