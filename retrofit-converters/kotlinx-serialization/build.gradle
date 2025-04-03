@@ -11,4 +11,5 @@ dependencies {
   testImplementation libs.okhttp.mockwebserver
   testImplementation libs.kotlinx.serialization.proto
   testImplementation libs.kotlinx.serialization.json
+  testImplementation libs.testParameterInjector
 }

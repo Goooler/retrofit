@@ -15,7 +15,8 @@ import retrofit2.Retrofit
 
 internal class Factory(
   private val contentType: MediaType,
-  private val serializer: Serializer
+  private val serializer: Serializer,
+  private val streaming: Boolean,
 ) : Converter.Factory() {
   @Suppress("RedundantNullableReturnType") // Retaining interface contract.
   override fun responseBodyConverter(
@@ -47,8 +48,8 @@ internal class Factory(
  * instance last to allow the other converters a chance to see their types.
  */
 @JvmName("create")
-fun StringFormat.asConverterFactory(contentType: MediaType): Converter.Factory {
-  return Factory(contentType, FromString(this))
+fun StringFormat.asConverterFactory(contentType: MediaType, streaming: Boolean): Converter.Factory {
+  return Factory(contentType, FromString(this), streaming)
 }
 
 /**
@@ -59,6 +60,6 @@ fun StringFormat.asConverterFactory(contentType: MediaType): Converter.Factory {
  * instance last to allow the other converters a chance to see their types.
  */
 @JvmName("create")
-fun BinaryFormat.asConverterFactory(contentType: MediaType): Converter.Factory {
-  return Factory(contentType, FromBytes(this))
+fun BinaryFormat.asConverterFactory(contentType: MediaType, streaming: Boolean): Converter.Factory {
+  return Factory(contentType, FromBytes(this), streaming)
 }
