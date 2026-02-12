@@ -47,6 +47,9 @@ dependencies {
 
   // Can't extend extraCompileOnly from compileOnly due to the circular dependencies.
   extraCompileOnly libs.okhttp.client
+  
+  // Allow types in the main source set to be visible to the extra source set.
+  extraImplementation sourceSets.main.output
 }
 
 javadoc {
