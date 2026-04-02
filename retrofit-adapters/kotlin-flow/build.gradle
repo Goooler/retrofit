@@ -1,0 +1,20 @@
+apply plugin: 'org.jetbrains.kotlin.jvm'
+apply plugin: 'com.vanniktech.maven.publish'
+
+dependencies {
+  api projects.retrofit
+  api libs.kotlinx.coroutines
+
+  compileOnly libs.findBugsAnnotations
+
+  testImplementation libs.junit
+  testImplementation libs.truth
+  testImplementation libs.okhttp.mockwebserver
+  testImplementation libs.kotlinx.coroutines
+}
+
+jar {
+  manifest {
+    attributes 'Automatic-Module-Name': 'retrofit2.adapter.kotlinflow'
+  }
+}
