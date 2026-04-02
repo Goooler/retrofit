@@ -17,7 +17,6 @@ package retrofit2.adapter.flow
 
 import com.google.common.truth.Truth.assertThat
 import java.io.IOException
-import java.lang.annotation.Annotation
 import java.lang.reflect.Type
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.toList
@@ -56,7 +55,7 @@ class FlowAdapterIntegrationTest {
   private fun buildRetrofit(): Retrofit =
     Retrofit.Builder()
       .baseUrl(server.url("/"))
-      .addConverterFactory(StringConverterFactory)
+      .addConverterFactory(StringConverterFactory())
       .addCallAdapterFactory(FlowCallAdapterFactory.create())
       .build()
 
@@ -65,7 +64,7 @@ class FlowAdapterIntegrationTest {
   // ---------------------------------------------------------------------------
 
   @Test
-  fun sseEvents() =
+  fun sseEvents() {
     runBlocking {
       server.enqueue(
         MockResponse()
@@ -84,9 +83,10 @@ class FlowAdapterIntegrationTest {
         )
         .inOrder()
     }
+  }
 
   @Test
-  fun sseEventsMultilineData() =
+  fun sseEventsMultilineData() {
     runBlocking {
       server.enqueue(
         MockResponse()
@@ -100,9 +100,10 @@ class FlowAdapterIntegrationTest {
           ServerSentEvent(id = null, event = null, data = "line one\nline two", retry = null)
         )
     }
+  }
 
   @Test
-  fun sseEventsWithRetry() =
+  fun sseEventsWithRetry() {
     runBlocking {
       server.enqueue(
         MockResponse()
@@ -116,9 +117,10 @@ class FlowAdapterIntegrationTest {
           ServerSentEvent(id = null, event = null, data = "reconnect", retry = 3000L)
         )
     }
+  }
 
   @Test
-  fun sseEventsCommentsIgnored() =
+  fun sseEventsCommentsIgnored() {
     runBlocking {
       server.enqueue(
         MockResponse()
@@ -132,9 +134,10 @@ class FlowAdapterIntegrationTest {
           ServerSentEvent(id = null, event = null, data = "real", retry = null)
         )
     }
+  }
 
   @Test
-  fun sseEventsHttpError() =
+  fun sseEventsHttpError() {
     runBlocking {
       server.enqueue(MockResponse().setResponseCode(500))
       val service = buildRetrofit().create(Service::class.java)
@@ -145,9 +148,10 @@ class FlowAdapterIntegrationTest {
         assertThat(e.code()).isEqualTo(500)
       }
     }
+  }
 
   @Test
-  fun sseEventsNetworkFailure() =
+  fun sseEventsNetworkFailure() {
     runBlocking {
       server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST))
       val service = buildRetrofit().create(Service::class.java)
@@ -158,13 +162,14 @@ class FlowAdapterIntegrationTest {
         // expected
       }
     }
+  }
 
   // ---------------------------------------------------------------------------
   // SSE suspend
   // ---------------------------------------------------------------------------
 
   @Test
-  fun sseEventsSuspend() =
+  fun sseEventsSuspend() {
     runBlocking {
       server.enqueue(
         MockResponse()
@@ -178,22 +183,24 @@ class FlowAdapterIntegrationTest {
           ServerSentEvent(id = null, event = null, data = "suspended", retry = null)
         )
     }
+  }
 
   // ---------------------------------------------------------------------------
   // Non-SSE body flow (non-suspend)
   // ---------------------------------------------------------------------------
 
   @Test
-  fun bodyFlow() =
+  fun bodyFlow() {
     runBlocking {
       server.enqueue(MockResponse().setBody("hello"))
       val service = buildRetrofit().create(Service::class.java)
       val values = service.body().toList()
       assertThat(values).containsExactly("hello")
     }
+  }
 
   @Test
-  fun bodyFlowHttpError() =
+  fun bodyFlowHttpError() {
     runBlocking {
       server.enqueue(MockResponse().setResponseCode(404))
       val service = buildRetrofit().create(Service::class.java)
@@ -204,33 +211,37 @@ class FlowAdapterIntegrationTest {
         assertThat(e.code()).isEqualTo(404)
       }
     }
+  }
 
   // ---------------------------------------------------------------------------
   // Non-SSE body flow (suspend)
   // ---------------------------------------------------------------------------
 
   @Test
-  fun bodyFlowSuspend() =
+  fun bodyFlowSuspend() {
     runBlocking {
       server.enqueue(MockResponse().setBody("world"))
       val service = buildRetrofit().create(Service::class.java)
       val values = service.bodySuspend().toList()
       assertThat(values).containsExactly("world")
     }
+  }
 
   // ---------------------------------------------------------------------------
   // Converter factory that converts ResponseBody to String
   // ---------------------------------------------------------------------------
 
-  private object StringConverterFactory : Converter.Factory() {
+  private class StringConverterFactory : Converter.Factory() {
     override fun responseBodyConverter(
       type: Type,
-      annotations: Array<out Annotation>,
+      annotations: Array<Annotation>,
       retrofit: Retrofit,
     ): Converter<ResponseBody, *>? {
-      return if (type == String::class.java) Converter<ResponseBody, String> { it.string() }
-      else null
+      return if (type == String::class.java) {
+        Converter<ResponseBody, String> { it.string() }
+      } else {
+        null
+      }
     }
   }
 }
-

@@ -23,6 +23,7 @@ import org.junit.Assert.fail
 import org.junit.Test
 import retrofit2.CallAdapter
 import retrofit2.Retrofit
+import retrofit2.http.GET
 
 class FlowCallAdapterFactoryTest {
   private val factory = FlowCallAdapterFactory.create()
@@ -31,6 +32,13 @@ class FlowCallAdapterFactoryTest {
       .baseUrl("http://localhost:1/")
       .addCallAdapterFactory(factory)
       .build()
+
+  // Interface used to extract the real @SSE annotation via reflection.
+  interface SseHelper {
+    @SSE
+    @GET("/")
+    fun events(): Flow<ServerSentEvent>
+  }
 
   @Test
   fun nonFlowTypeReturnsNull() {
@@ -58,7 +66,7 @@ class FlowCallAdapterFactoryTest {
   @Test
   fun flowSseResponseTypeIsResponseBody() {
     val type = flowOf(ServerSentEvent::class.java)
-    val adapter = factory.get(type, arrayOf(SseAnnotation), retrofit)!!
+    val adapter = factory.get(type, sseAnnotations(), retrofit)!!
     assertThat(adapter.responseType()).isEqualTo(okhttp3.ResponseBody::class.java)
   }
 
@@ -66,9 +74,9 @@ class FlowCallAdapterFactoryTest {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  private object SseAnnotation : SSE, java.lang.annotation.Annotation {
-    override fun annotationType(): Class<out java.lang.annotation.Annotation> = SSE::class.java
-  }
+  /** Extracts annotations (including [@SSE][SSE]) from [SseHelper.events] for use in tests. */
+  private fun sseAnnotations(): Array<Annotation> =
+    SseHelper::class.java.getMethod("events").annotations.filterIsInstance<Annotation>().toTypedArray()
 
   private fun flowOf(type: Type): Type =
     object : ParameterizedType {
