@@ -39,17 +39,10 @@ class FlowAdapterIntegrationTest {
   interface Service {
     @SSE
     @GET("/")
-    fun sseEvents(): Flow<ServerSentEvent>
-
-    @SSE
-    @GET("/")
-    suspend fun sseEventsSuspend(): Flow<ServerSentEvent>
+    suspend fun sseEvents(): Flow<ServerSentEvent>
 
     @GET("/")
-    fun body(): Flow<String>
-
-    @GET("/")
-    suspend fun bodySuspend(): Flow<String>
+    suspend fun body(): Flow<String>
   }
 
   private fun buildRetrofit(): Retrofit =
@@ -60,7 +53,7 @@ class FlowAdapterIntegrationTest {
       .build()
 
   // ---------------------------------------------------------------------------
-  // SSE non-suspend
+  // SSE (suspend)
   // ---------------------------------------------------------------------------
 
   @Test
@@ -165,28 +158,7 @@ class FlowAdapterIntegrationTest {
   }
 
   // ---------------------------------------------------------------------------
-  // SSE suspend
-  // ---------------------------------------------------------------------------
-
-  @Test
-  fun sseEventsSuspend() {
-    runBlocking {
-      server.enqueue(
-        MockResponse()
-          .setHeader("Content-Type", "text/event-stream")
-          .setBody("data: suspended\n\n")
-      )
-      val service = buildRetrofit().create(Service::class.java)
-      val events = service.sseEventsSuspend().toList()
-      assertThat(events)
-        .containsExactly(
-          ServerSentEvent(id = null, event = null, data = "suspended", retry = null)
-        )
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Non-SSE body flow (non-suspend)
+  // Non-SSE body flow (suspend)
   // ---------------------------------------------------------------------------
 
   @Test
@@ -214,20 +186,6 @@ class FlowAdapterIntegrationTest {
   }
 
   // ---------------------------------------------------------------------------
-  // Non-SSE body flow (suspend)
-  // ---------------------------------------------------------------------------
-
-  @Test
-  fun bodyFlowSuspend() {
-    runBlocking {
-      server.enqueue(MockResponse().setBody("world"))
-      val service = buildRetrofit().create(Service::class.java)
-      val values = service.bodySuspend().toList()
-      assertThat(values).containsExactly("world")
-    }
-  }
-
-  // ---------------------------------------------------------------------------
   // Converter factory that converts ResponseBody to String
   // ---------------------------------------------------------------------------
 
@@ -245,3 +203,4 @@ class FlowAdapterIntegrationTest {
     }
   }
 }
+

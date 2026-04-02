@@ -34,7 +34,7 @@ import retrofit2.Response
 import retrofit2.Retrofit
 
 /**
- * A [CallAdapter.Factory] that supports [Flow] as a service-method return type.
+ * A [CallAdapter.Factory] that supports [Flow] as a **suspend** service-method return type.
  *
  * ## SSE (Server-Sent Events)
  *
@@ -45,12 +45,7 @@ import retrofit2.Retrofit
  * interface Api {
  *   @SSE
  *   @GET("events")
- *   fun events(): Flow<ServerSentEvent>
- *
- *   // suspend is also supported
- *   @SSE
- *   @GET("events")
- *   suspend fun eventsAsync(): Flow<ServerSentEvent>
+ *   suspend fun events(): Flow<ServerSentEvent>
  * }
  * ```
  *
@@ -65,13 +60,14 @@ import retrofit2.Retrofit
  *
  * ## Non-SSE flows
  *
- * Without [@SSE][SSE], a `Flow<T>` return type will emit a single converted response body (like a
- * regular body call) and complete, or fail with [HttpException] / [java.io.IOException] as appropriate.
+ * Without [@SSE][SSE], a `suspend fun foo(): Flow<T>` return type will emit a single converted
+ * response body (like a regular body call) and complete, or fail with [HttpException] /
+ * [java.io.IOException] as appropriate.
  *
  * ```kotlin
  * interface Api {
  *   @GET("user")
- *   fun getUser(): Flow<String>
+ *   suspend fun getUser(): Flow<String>
  * }
  * ```
  */
@@ -89,61 +85,22 @@ class FlowCallAdapterFactory private constructor() : CallAdapter.Factory() {
   ): CallAdapter<*, *>? {
     val isSse = annotations.any { it is SSE }
 
-    // Non-suspend: fun foo(): Flow<T>
-    if (getRawType(returnType) == Flow::class.java) {
-      if (returnType !is ParameterizedType) {
-        throw IllegalStateException(
-          "Flow return type must be parameterized as Flow<Foo> or Flow<? extends Foo>"
-        )
-      }
-      val elementType = getParameterUpperBound(0, returnType)
-      // For SSE the adapter reads raw bytes itself; for a regular body call the registered
-      // converter handles deserialization, so we expose the element type directly.
-      val responseType: Type = if (isSse) ResponseBody::class.java else elementType
-      @Suppress("UNCHECKED_CAST")
-      return BodyFlowCallAdapter<Any>(responseType, isSse) as CallAdapter<*, *>
-    }
-
-    // Suspend: suspend fun foo(): Flow<T>
+    // Only support suspend functions: suspend fun foo(): Flow<T>
     // Retrofit wraps the continuation return type in Call<T>, so the adapter type seen here
     // is Call<Flow<T>>.
-    if (getRawType(returnType) == Call::class.java) {
-      if (returnType !is ParameterizedType) return null
-      val callType = getParameterUpperBound(0, returnType)
-      if (getRawType(callType) != Flow::class.java) return null
-      if (callType !is ParameterizedType) {
-        throw IllegalStateException(
-          "Flow return type must be parameterized as Flow<Foo> or Flow<? extends Foo>"
-        )
-      }
-      val elementType = getParameterUpperBound(0, callType)
-      val responseType: Type = if (isSse) ResponseBody::class.java else elementType
-      @Suppress("UNCHECKED_CAST")
-      return SuspendFlowCallAdapter<Any>(responseType, isSse) as CallAdapter<*, *>
+    if (getRawType(returnType) != Call::class.java) return null
+    if (returnType !is ParameterizedType) return null
+    val callType = getParameterUpperBound(0, returnType)
+    if (getRawType(callType) != Flow::class.java) return null
+    if (callType !is ParameterizedType) {
+      throw IllegalStateException(
+        "Flow return type must be parameterized as Flow<Foo> or Flow<? extends Foo>"
+      )
     }
-
-    return null
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Non-suspend adapter: adapt(Call<R>) → Flow<R>  (or Flow<ServerSentEvent> for SSE)
-// ---------------------------------------------------------------------------
-
-private class BodyFlowCallAdapter<R>(
-  private val responseType_: Type,
-  private val isSse: Boolean,
-) : CallAdapter<R, Flow<*>> {
-
-  override fun responseType(): Type = responseType_
-
-  override fun adapt(call: Call<R>): Flow<*> {
-    return if (isSse) {
-      @Suppress("UNCHECKED_CAST")
-      sseFlow(call as Call<ResponseBody>)
-    } else {
-      bodyFlow(call)
-    }
+    val elementType = getParameterUpperBound(0, callType)
+    val responseType: Type = if (isSse) ResponseBody::class.java else elementType
+    @Suppress("UNCHECKED_CAST")
+    return SuspendFlowCallAdapter<Any>(responseType, isSse) as CallAdapter<*, *>
   }
 }
 
@@ -288,3 +245,4 @@ private fun <R> bodyFlow(call: Call<R>): Flow<R> = callbackFlow {
 
   awaitClose { call.cancel() }
 }
+
