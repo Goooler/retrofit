@@ -66,7 +66,7 @@ import retrofit2.Retrofit
  * ## Non-SSE flows
  *
  * Without [@SSE][SSE], a `Flow<T>` return type will emit a single converted response body (like a
- * regular body call) and complete, or fail with [HttpException] / [IOException] as appropriate.
+ * regular body call) and complete, or fail with [HttpException] / [java.io.IOException] as appropriate.
  *
  * ```kotlin
  * interface Api {
@@ -261,7 +261,7 @@ private fun sseFlow(call: Call<ResponseBody>): Flow<ServerSentEvent> = callbackF
 
 /**
  * Returns a cold [Flow] that, when collected, makes the HTTP call, emits the single converted
- * response body, and completes. Errors result in [HttpException] or [IOException].
+ * response body, and completes. Errors result in [HttpException] or [java.io.IOException].
  */
 private fun <R> bodyFlow(call: Call<R>): Flow<R> = callbackFlow {
   call.clone().enqueue(
