@@ -32,18 +32,20 @@ import retrofit2.Callback
 import retrofit2.HttpException
 import retrofit2.Response
 import retrofit2.Retrofit
+import retrofit2.http.Streaming
 
 /**
  * A [CallAdapter.Factory] that supports [Flow] as a **suspend** service-method return type.
  *
  * ## SSE (Server-Sent Events)
  *
- * When the method is also annotated with [@SSE][SSE], the adapter streams the HTTP response body as
- * Server-Sent Events, emitting each parsed [ServerSentEvent] to the flow:
+ * When the method is also annotated with [@Streaming][retrofit2.http.Streaming], the adapter
+ * streams the HTTP response body as Server-Sent Events, emitting each parsed [ServerSentEvent] to
+ * the flow:
  *
  * ```kotlin
  * interface Api {
- *   @SSE
+ *   @Streaming
  *   @GET("events")
  *   suspend fun events(): Flow<ServerSentEvent>
  * }
@@ -60,9 +62,9 @@ import retrofit2.Retrofit
  *
  * ## Non-SSE flows
  *
- * Without [@SSE][SSE], a `suspend fun foo(): Flow<T>` return type will emit a single converted
- * response body (like a regular body call) and complete, or fail with [HttpException] /
- * [java.io.IOException] as appropriate.
+ * Without [@Streaming][retrofit2.http.Streaming], a `suspend fun foo(): Flow<T>` return type will
+ * emit a single converted response body (like a regular body call) and complete, or fail with
+ * [HttpException] / [java.io.IOException] as appropriate.
  *
  * ```kotlin
  * interface Api {
@@ -83,7 +85,7 @@ class FlowCallAdapterFactory private constructor() : CallAdapter.Factory() {
     annotations: Array<Annotation>,
     retrofit: Retrofit,
   ): CallAdapter<*, *>? {
-    val isSse = annotations.any { it is SSE }
+    val isSse = annotations.any { it is Streaming }
 
     // Only support suspend functions: suspend fun foo(): Flow<T>
     // Retrofit wraps the continuation return type in Call<T>, so the adapter type seen here

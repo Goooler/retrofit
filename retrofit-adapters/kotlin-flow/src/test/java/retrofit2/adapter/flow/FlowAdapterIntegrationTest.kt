@@ -32,12 +32,13 @@ import retrofit2.Converter
 import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.http.GET
+import retrofit2.http.Streaming
 
 class FlowAdapterIntegrationTest {
   @get:Rule val server = MockWebServer()
 
   interface Service {
-    @SSE
+    @Streaming
     @GET("/")
     suspend fun sseEvents(): Flow<ServerSentEvent>
 

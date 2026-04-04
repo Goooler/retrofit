@@ -24,6 +24,7 @@ import org.junit.Test
 import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.http.GET
+import retrofit2.http.Streaming
 
 class FlowCallAdapterFactoryTest {
   private val factory = FlowCallAdapterFactory.create()
@@ -33,9 +34,9 @@ class FlowCallAdapterFactoryTest {
       .addCallAdapterFactory(factory)
       .build()
 
-  // Interface used to extract the real @SSE annotation via reflection.
+  // Interface used to extract the real @Streaming annotation via reflection.
   interface SseHelper {
-    @SSE
+    @Streaming
     @GET("/")
     suspend fun events(): Flow<ServerSentEvent>
   }
@@ -61,7 +62,7 @@ class FlowCallAdapterFactoryTest {
     assertThat(adapter.responseType()).isEqualTo(String::class.java)
   }
 
-  /** suspend fun foo(): Flow<T> with @SSE → responseType is ResponseBody. */
+  /** suspend fun foo(): Flow<T> with @Streaming → responseType is ResponseBody. */
   @Test
   fun suspendFlowSseResponseTypeIsResponseBody() {
     val type = callOf(flowOf(ServerSentEvent::class.java))
@@ -85,7 +86,7 @@ class FlowCallAdapterFactoryTest {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  /** Extracts annotations (including [@SSE][SSE]) from [SseHelper.events] for use in tests. */
+  /** Extracts annotations (including [@Streaming][retrofit2.http.Streaming]) from [SseHelper.events] for use in tests. */
   private fun sseAnnotations(): Array<Annotation> =
     SseHelper::class.java
       .getMethod("events", kotlin.coroutines.Continuation::class.java)
