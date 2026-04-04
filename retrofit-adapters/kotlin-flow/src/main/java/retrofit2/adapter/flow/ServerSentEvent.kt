@@ -22,11 +22,9 @@ package retrofit2.adapter.flow
  * @property id The last event ID, or `null` if none was set.
  * @property event The event type, or `null` if the default "message" type.
  * @property data The data payload. Multiple `data:` lines are joined with `\n`.
- * @property retry The reconnection time in milliseconds, or `null` if not provided.
  */
 data class ServerSentEvent(
   val id: String?,
   val event: String?,
   val data: String,
-  val retry: Long?,
 )

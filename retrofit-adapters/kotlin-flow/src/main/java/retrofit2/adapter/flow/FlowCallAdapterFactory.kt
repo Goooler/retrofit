@@ -17,14 +17,14 @@ package retrofit2.adapter.flow
 
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.launch
+import okhttp3.Request
 import okhttp3.ResponseBody
+import okhttp3.sse.EventSource
+import okhttp3.sse.EventSourceListener
+import okhttp3.sse.EventSources
 import okio.Timeout
 import retrofit2.Call
 import retrofit2.CallAdapter
@@ -101,8 +101,9 @@ class FlowCallAdapterFactory private constructor() : CallAdapter.Factory() {
     }
     val elementType = getParameterUpperBound(0, callType)
     val responseType: Type = if (isSse) ResponseBody::class.java else elementType
+    val eventSourceFactory = if (isSse) EventSources.createFactory(retrofit.callFactory()) else null
     @Suppress("UNCHECKED_CAST")
-    return SuspendFlowCallAdapter<Any>(responseType, isSse) as CallAdapter<*, *>
+    return SuspendFlowCallAdapter<Any>(responseType, isSse, eventSourceFactory) as CallAdapter<*, *>
   }
 }
 
@@ -118,6 +119,7 @@ class FlowCallAdapterFactory private constructor() : CallAdapter.Factory() {
 private class SuspendFlowCallAdapter<R>(
   private val responseType_: Type,
   private val isSse: Boolean,
+  private val eventSourceFactory: EventSource.Factory?,
 ) : CallAdapter<R, Call<Flow<*>>> {
 
   override fun responseType(): Type = responseType_
@@ -125,8 +127,7 @@ private class SuspendFlowCallAdapter<R>(
   override fun adapt(call: Call<R>): Call<Flow<*>> {
     val flow: Flow<*> =
       if (isSse) {
-        @Suppress("UNCHECKED_CAST")
-        sseFlow(call as Call<ResponseBody>)
+        sseFlow(call.request(), eventSourceFactory!!)
       } else {
         bodyFlow(call)
       }
@@ -168,54 +169,46 @@ private class FlowAsCall<R>(
 // ---------------------------------------------------------------------------
 
 /**
- * Returns a cold [Flow] that, when collected, makes the HTTP call and emits each parsed
- * [ServerSentEvent] from the response body stream. The HTTP connection is closed when the
- * stream ends or the flow is cancelled.
- *
- * The SSE response body is read on [Dispatchers.IO] so that blocking IO does not tie up the
- * caller's coroutine dispatcher.
+ * Returns a cold [Flow] that, when collected, opens an OkHttp [EventSource] for the given
+ * [request] and emits each parsed [ServerSentEvent]. The connection is closed when the stream ends
+ * or the flow is cancelled.
  */
-private fun sseFlow(call: Call<ResponseBody>): Flow<ServerSentEvent> = callbackFlow {
-  val scope: CoroutineScope = this
-  val channel: SendChannel<ServerSentEvent> = this
+private fun sseFlow(
+  request: Request,
+  eventSourceFactory: EventSource.Factory,
+): Flow<ServerSentEvent> = callbackFlow {
+  val eventSource =
+    eventSourceFactory.newEventSource(
+      request,
+      object : EventSourceListener() {
+        override fun onEvent(
+          eventSource: EventSource,
+          id: String?,
+          type: String?,
+          data: String,
+        ) {
+          trySend(ServerSentEvent(id = id, event = type, data = data))
+        }
 
-  call.clone().enqueue(
-    object : Callback<ResponseBody> {
-      override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-        if (!response.isSuccessful) {
-          channel.close(HttpException(response))
-          return
+        override fun onClosed(eventSource: EventSource) {
+          close()
         }
-        val body = response.body()
-        if (body == null) {
-          channel.close()
-          return
-        }
-        // Read the SSE stream on an IO thread so that blocking reads do not block the
-        // coroutine dispatcher. `send` suspends when the consumer is slow, providing
-        // natural backpressure.
-        scope.launch(Dispatchers.IO) {
-          try {
-            body.use { responseBody ->
-              val reader = responseBody.charStream().buffered()
-              for (event in parseServerSentEvents(reader)) {
-                channel.send(event)
+
+        override fun onFailure(
+          eventSource: EventSource,
+          t: Throwable?,
+          response: okhttp3.Response?,
+        ) {
+          close(
+            t
+              ?: response?.let {
+                HttpException(Response.error<Nothing>(it.body, it))
               }
-            }
-            channel.close()
-          } catch (e: Exception) {
-            channel.close(e)
-          }
+          )
         }
-      }
-
-      override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-        channel.close(t)
-      }
-    }
-  )
-
-  awaitClose { call.cancel() }
+      },
+    )
+  awaitClose { eventSource.cancel() }
 }
 
 /**

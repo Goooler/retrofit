@@ -72,8 +72,8 @@ class FlowAdapterIntegrationTest {
       val events = service.sseEvents().toList()
       assertThat(events)
         .containsExactly(
-          ServerSentEvent(id = "1", event = "ping", data = "hello", retry = null),
-          ServerSentEvent(id = "2", event = null, data = "world", retry = null),
+          ServerSentEvent(id = "1", event = "ping", data = "hello"),
+          ServerSentEvent(id = "2", event = null, data = "world"),
         )
         .inOrder()
     }
@@ -91,7 +91,7 @@ class FlowAdapterIntegrationTest {
       val events = service.sseEvents().toList()
       assertThat(events)
         .containsExactly(
-          ServerSentEvent(id = null, event = null, data = "line one\nline two", retry = null)
+          ServerSentEvent(id = null, event = null, data = "line one\nline two")
         )
     }
   }
@@ -108,7 +108,7 @@ class FlowAdapterIntegrationTest {
       val events = service.sseEvents().toList()
       assertThat(events)
         .containsExactly(
-          ServerSentEvent(id = null, event = null, data = "reconnect", retry = 3000L)
+          ServerSentEvent(id = null, event = null, data = "reconnect")
         )
     }
   }
@@ -125,7 +125,7 @@ class FlowAdapterIntegrationTest {
       val events = service.sseEvents().toList()
       assertThat(events)
         .containsExactly(
-          ServerSentEvent(id = null, event = null, data = "real", retry = null)
+          ServerSentEvent(id = null, event = null, data = "real")
         )
     }
   }

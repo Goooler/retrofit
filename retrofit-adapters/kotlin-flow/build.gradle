@@ -3,6 +3,7 @@ apply plugin: 'com.vanniktech.maven.publish'
 
 dependencies {
   api projects.retrofit
+  api libs.okhttp.sse
   api libs.kotlinx.coroutines
 
   compileOnly libs.findBugsAnnotations
