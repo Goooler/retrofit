@@ -38,20 +38,18 @@ class FlowCallAdapterFactoryTest {
   @get:Rule val server = MockWebServer()
 
   interface Service {
-    @Streaming
-    @GET("/")
-    suspend fun sseEvents(): Flow<ServerSentEvent>
+    @Streaming @GET("/") suspend fun sseEvents(): Flow<ServerSentEvent>
 
-    @GET("/")
-    suspend fun body(): Flow<String>
+    @GET("/") suspend fun body(): Flow<String>
   }
 
-  private val retrofit get() =
-    Retrofit.Builder()
-      .baseUrl(server.url("/"))
-      .addConverterFactory(StringConverterFactory())
-      .addCallAdapterFactory(FlowCallAdapterFactory.create())
-      .build()
+  private val retrofit
+    get() =
+      Retrofit.Builder()
+        .baseUrl(server.url("/"))
+        .addConverterFactory(StringConverterFactory())
+        .addCallAdapterFactory(FlowCallAdapterFactory.create())
+        .build()
 
   // ---------------------------------------------------------------------------
   // SSE (suspend)
@@ -59,53 +57,45 @@ class FlowCallAdapterFactoryTest {
 
   @Test
   fun sseEvents() = runBlocking {
-      server.enqueue(
-        MockResponse()
-          .setHeader("Content-Type", "text/event-stream")
-          .setBody(
-            "id: 1\nevent: ping\ndata: hello\n\n" +
-              "id: 2\ndata: world\n\n"
-          )
+    server.enqueue(
+      MockResponse()
+        .setHeader("Content-Type", "text/event-stream")
+        .setBody("id: 1\nevent: ping\ndata: hello\n\n" + "id: 2\ndata: world\n\n")
+    )
+    val service = retrofit.create(Service::class.java)
+    val events = service.sseEvents().toList()
+    assertThat(events)
+      .containsExactly(
+        ServerSentEvent(id = "1", event = "ping", data = "hello"),
+        ServerSentEvent(id = "2", event = null, data = "world"),
       )
-      val service = retrofit.create(Service::class.java)
-      val events = service.sseEvents().toList()
-      assertThat(events)
-        .containsExactly(
-          ServerSentEvent(id = "1", event = "ping", data = "hello"),
-          ServerSentEvent(id = "2", event = null, data = "world"),
-        )
-        .inOrder()
+      .inOrder()
   }
 
   @Test
   fun sseEventsMultilineData() = runBlocking {
-      server.enqueue(
-        MockResponse()
-          .setHeader("Content-Type", "text/event-stream")
-          .setBody("data: line one\ndata: line two\n\n")
-      )
-      val service = retrofit.create(Service::class.java)
-      val events = service.sseEvents().toList()
-      assertThat(events)
-        .containsExactly(
-          ServerSentEvent(id = null, event = null, data = "line one\nline two"),
-        )
+    server.enqueue(
+      MockResponse()
+        .setHeader("Content-Type", "text/event-stream")
+        .setBody("data: line one\ndata: line two\n\n")
+    )
+    val service = retrofit.create(Service::class.java)
+    val events = service.sseEvents().toList()
+    assertThat(events)
+      .containsExactly(ServerSentEvent(id = null, event = null, data = "line one\nline two"))
     Unit
   }
 
   @Test
   fun sseEventsWithRetry() = runBlocking {
-      server.enqueue(
-        MockResponse()
-          .setHeader("Content-Type", "text/event-stream")
-          .setBody("retry: 3000\ndata: reconnect\n\n")
-      )
-      val service = retrofit.create(Service::class.java)
-      val events = service.sseEvents().toList()
-      assertThat(events)
-        .containsExactly(
-          ServerSentEvent(id = null, event = null, data = "reconnect"),
-        )
+    server.enqueue(
+      MockResponse()
+        .setHeader("Content-Type", "text/event-stream")
+        .setBody("retry: 3000\ndata: reconnect\n\n")
+    )
+    val service = retrofit.create(Service::class.java)
+    val events = service.sseEvents().toList()
+    assertThat(events).containsExactly(ServerSentEvent(id = null, event = null, data = "reconnect"))
     Unit
   }
 
@@ -118,10 +108,7 @@ class FlowCallAdapterFactoryTest {
     )
     val service = retrofit.create(Service::class.java)
     val events = service.sseEvents().toList()
-    assertThat(events)
-      .containsExactly(
-        ServerSentEvent(id = null, event = null, data = "real"),
-      )
+    assertThat(events).containsExactly(ServerSentEvent(id = null, event = null, data = "real"))
     Unit
   }
 
@@ -192,4 +179,3 @@ class FlowCallAdapterFactoryTest {
     }
   }
 }
-

@@ -42,7 +42,6 @@ import retrofit2.http.Streaming
  * When the method is also annotated with [@Streaming][retrofit2.http.Streaming], the adapter
  * streams the HTTP response body as Server-Sent Events, emitting each parsed [ServerSentEvent] to
  * the flow:
- *
  * ```kotlin
  * interface Service {
  *   @Streaming
@@ -52,7 +51,6 @@ import retrofit2.http.Streaming
  * ```
  *
  * Register this factory with [Retrofit.Builder.addCallAdapterFactory]:
- *
  * ```kotlin
  * val retrofit = Retrofit.Builder()
  *   .baseUrl(baseUrl)
@@ -76,8 +74,7 @@ import retrofit2.http.Streaming
 class FlowCallAdapterFactory private constructor() : CallAdapter.Factory() {
 
   companion object {
-    @JvmStatic
-    fun create(): FlowCallAdapterFactory = FlowCallAdapterFactory()
+    @JvmStatic fun create(): FlowCallAdapterFactory = FlowCallAdapterFactory()
   }
 
   override fun get(
@@ -92,13 +89,12 @@ class FlowCallAdapterFactory private constructor() : CallAdapter.Factory() {
     val callType = getParameterUpperBound(0, returnType)
     if (getRawType(callType) != Flow::class.java) return null
     if (callType !is ParameterizedType) {
-      error(
-        "Flow return type must be parameterized as Flow<Foo> or Flow<? extends Foo>"
-      )
+      error("Flow return type must be parameterized as Flow<Foo> or Flow<? extends Foo>")
     }
     val elementType = getParameterUpperBound(0, callType)
     val responseType = if (isStreaming) ResponseBody::class.java else elementType
-    val eventSourceFactory = if (isStreaming) EventSources.createFactory(retrofit.callFactory()) else null
+    val eventSourceFactory =
+      if (isStreaming) EventSources.createFactory(retrofit.callFactory()) else null
     return SuspendFlowCallAdapter<Any>(responseType, isStreaming, eventSourceFactory)
   }
 }
@@ -132,14 +128,12 @@ private class SuspendFlowCallAdapter<R>(
 }
 
 /**
- * A [Call] whose "response body" is a pre-built cold [Flow]. When enqueued it immediately
- * delivers the flow to the callback so that Retrofit's `suspend` machinery can resume the coroutine
- * with the flow value. The HTTP request is only started when the returned flow is collected.
+ * A [Call] whose "response body" is a pre-built cold [Flow]. When enqueued it immediately delivers
+ * the flow to the callback so that Retrofit's `suspend` machinery can resume the coroutine with the
+ * flow value. The HTTP request is only started when the returned flow is collected.
  */
-private class FlowAsCall<R>(
-  private val delegate: Call<R>,
-  private val flow: Flow<*>,
-) : Call<Flow<*>> {
+private class FlowAsCall<R>(private val delegate: Call<R>, private val flow: Flow<*>) :
+  Call<Flow<*>> {
 
   override fun enqueue(callback: Callback<Flow<*>>) {
     callback.onResponse(this, Response.success(flow))
@@ -165,9 +159,9 @@ private class FlowAsCall<R>(
 // ---------------------------------------------------------------------------
 
 /**
- * Returns a cold [Flow] that, when collected, opens an OkHttp [EventSource] for the given
- * [request] and emits each parsed [ServerSentEvent]. The connection is closed when the stream ends
- * or the flow is cancelled.
+ * Returns a cold [Flow] that, when collected, opens an OkHttp [EventSource] for the given [request]
+ * and emits each parsed [ServerSentEvent]. The connection is closed when the stream ends or the
+ * flow is cancelled.
  */
 private fun streamingFlow(
   request: Request,
@@ -177,12 +171,7 @@ private fun streamingFlow(
     eventSourceFactory.newEventSource(
       request,
       object : EventSourceListener() {
-        override fun onEvent(
-          eventSource: EventSource,
-          id: String?,
-          type: String?,
-          data: String,
-        ) {
+        override fun onEvent(eventSource: EventSource, id: String?, type: String?, data: String) {
           trySend(ServerSentEvent(id = id, event = type, data = data))
         }
 
@@ -195,12 +184,7 @@ private fun streamingFlow(
           t: Throwable?,
           response: okhttp3.Response?,
         ) {
-          close(
-            t
-              ?: response?.let {
-                HttpException(Response.error<Nothing>(it.body, it))
-              }
-          )
+          close(t ?: response?.let { HttpException(Response.error<Nothing>(it.body, it)) })
         }
       },
     )
@@ -212,28 +196,29 @@ private fun streamingFlow(
  * response body, and completes. Errors result in [HttpException] or [java.io.IOException].
  */
 private fun <R> bodyFlow(call: Call<R>): Flow<R> = callbackFlow {
-  call.clone().enqueue(
-    object : Callback<R> {
-      override fun onResponse(call: Call<R>, response: Response<R>) {
-        if (!response.isSuccessful) {
-          close(HttpException(response))
-          return
-        }
-        val body = response.body()
-        if (body == null) {
+  call
+    .clone()
+    .enqueue(
+      object : Callback<R> {
+        override fun onResponse(call: Call<R>, response: Response<R>) {
+          if (!response.isSuccessful) {
+            close(HttpException(response))
+            return
+          }
+          val body = response.body()
+          if (body == null) {
+            close()
+            return
+          }
+          trySend(body)
           close()
-          return
         }
-        trySend(body)
-        close()
-      }
 
-      override fun onFailure(call: Call<R>, t: Throwable) {
-        close(t)
+        override fun onFailure(call: Call<R>, t: Throwable) {
+          close(t)
+        }
       }
-    }
-  )
+    )
 
   awaitClose { call.cancel() }
 }
-

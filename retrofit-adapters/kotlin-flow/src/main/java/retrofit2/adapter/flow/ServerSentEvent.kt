@@ -23,8 +23,4 @@ package retrofit2.adapter.flow
  * @property event The event type, or `null` if the default "message" type.
  * @property data The data payload. Multiple `data:` lines are joined with `\n`.
  */
-data class ServerSentEvent(
-  val id: String?,
-  val event: String?,
-  val data: String,
-)
+data class ServerSentEvent(val id: String?, val event: String?, val data: String)
