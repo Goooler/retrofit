@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Square, Inc.
+ * Copyright (C) 2026 Square, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ import retrofit2.http.Streaming
  * the flow:
  *
  * ```kotlin
- * interface Api {
+ * interface Service {
  *   @Streaming
  *   @GET("events")
  *   suspend fun events(): Flow<ServerSentEvent>
@@ -67,7 +67,7 @@ import retrofit2.http.Streaming
  * [HttpException] / [java.io.IOException] as appropriate.
  *
  * ```kotlin
- * interface Api {
+ * interface Service {
  *   @GET("user")
  *   suspend fun getUser(): Flow<String>
  * }
@@ -85,25 +85,21 @@ class FlowCallAdapterFactory private constructor() : CallAdapter.Factory() {
     annotations: Array<Annotation>,
     retrofit: Retrofit,
   ): CallAdapter<*, *>? {
-    val isSse = annotations.any { it is Streaming }
+    val isStreaming = annotations.any { it is Streaming }
 
-    // Only support suspend functions: suspend fun foo(): Flow<T>
-    // Retrofit wraps the continuation return type in Call<T>, so the adapter type seen here
-    // is Call<Flow<T>>.
     if (getRawType(returnType) != Call::class.java) return null
     if (returnType !is ParameterizedType) return null
     val callType = getParameterUpperBound(0, returnType)
     if (getRawType(callType) != Flow::class.java) return null
     if (callType !is ParameterizedType) {
-      throw IllegalStateException(
+      error(
         "Flow return type must be parameterized as Flow<Foo> or Flow<? extends Foo>"
       )
     }
     val elementType = getParameterUpperBound(0, callType)
-    val responseType: Type = if (isSse) ResponseBody::class.java else elementType
-    val eventSourceFactory = if (isSse) EventSources.createFactory(retrofit.callFactory()) else null
-    @Suppress("UNCHECKED_CAST")
-    return SuspendFlowCallAdapter<Any>(responseType, isSse, eventSourceFactory) as CallAdapter<*, *>
+    val responseType = if (isStreaming) ResponseBody::class.java else elementType
+    val eventSourceFactory = if (isStreaming) EventSources.createFactory(retrofit.callFactory()) else null
+    return SuspendFlowCallAdapter<Any>(responseType, isStreaming, eventSourceFactory)
   }
 }
 
@@ -117,17 +113,17 @@ class FlowCallAdapterFactory private constructor() : CallAdapter.Factory() {
 // ---------------------------------------------------------------------------
 
 private class SuspendFlowCallAdapter<R>(
-  private val responseType_: Type,
-  private val isSse: Boolean,
+  private val _responseType: Type,
+  private val isStreaming: Boolean,
   private val eventSourceFactory: EventSource.Factory?,
 ) : CallAdapter<R, Call<Flow<*>>> {
 
-  override fun responseType(): Type = responseType_
+  override fun responseType(): Type = _responseType
 
   override fun adapt(call: Call<R>): Call<Flow<*>> {
     val flow: Flow<*> =
-      if (isSse) {
-        sseFlow(call.request(), eventSourceFactory!!)
+      if (isStreaming) {
+        streamingFlow(call.request(), requireNotNull(eventSourceFactory))
       } else {
         bodyFlow(call)
       }
@@ -159,7 +155,7 @@ private class FlowAsCall<R>(
 
   override fun clone(): Call<Flow<*>> = FlowAsCall(delegate.clone(), flow)
 
-  override fun request(): okhttp3.Request = delegate.request()
+  override fun request(): Request = delegate.request()
 
   override fun timeout(): Timeout = delegate.timeout()
 }
@@ -173,7 +169,7 @@ private class FlowAsCall<R>(
  * [request] and emits each parsed [ServerSentEvent]. The connection is closed when the stream ends
  * or the flow is cancelled.
  */
-private fun sseFlow(
+private fun streamingFlow(
   request: Request,
   eventSourceFactory: EventSource.Factory,
 ): Flow<ServerSentEvent> = callbackFlow {
