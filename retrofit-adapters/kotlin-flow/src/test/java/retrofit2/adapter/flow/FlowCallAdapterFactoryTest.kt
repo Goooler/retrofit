@@ -16,101 +16,180 @@
 package retrofit2.adapter.flow
 
 import com.google.common.truth.Truth.assertThat
-import java.lang.reflect.ParameterizedType
+import java.io.IOException
 import java.lang.reflect.Type
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.runBlocking
+import okhttp3.ResponseBody
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.SocketPolicy
 import org.junit.Assert.fail
+import org.junit.Rule
 import org.junit.Test
-import retrofit2.Call
+import retrofit2.Converter
+import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.http.GET
 import retrofit2.http.Streaming
 
 class FlowCallAdapterFactoryTest {
-  private val factory = FlowCallAdapterFactory.create()
-  private val retrofit =
-    Retrofit.Builder()
-      .baseUrl("http://localhost:1/")
-      .addCallAdapterFactory(factory)
-      .build()
+  @get:Rule val server = MockWebServer()
 
-  // Interface used to extract the real @Streaming annotation via reflection.
-  interface SseHelper {
+  interface Service {
     @Streaming
     @GET("/")
-    suspend fun events(): Flow<ServerSentEvent>
+    suspend fun sseEvents(): Flow<ServerSentEvent>
+
+    @GET("/")
+    suspend fun body(): Flow<String>
+  }
+
+  private val retrofit get() =
+    Retrofit.Builder()
+      .baseUrl(server.url("/"))
+      .addConverterFactory(StringConverterFactory())
+      .addCallAdapterFactory(FlowCallAdapterFactory.create())
+      .build()
+
+  // ---------------------------------------------------------------------------
+  // SSE (suspend)
+  // ---------------------------------------------------------------------------
+
+  @Test
+  fun sseEvents() = runBlocking {
+      server.enqueue(
+        MockResponse()
+          .setHeader("Content-Type", "text/event-stream")
+          .setBody(
+            "id: 1\nevent: ping\ndata: hello\n\n" +
+              "id: 2\ndata: world\n\n"
+          )
+      )
+      val service = retrofit.create(Service::class.java)
+      val events = service.sseEvents().toList()
+      assertThat(events)
+        .containsExactly(
+          ServerSentEvent(id = "1", event = "ping", data = "hello"),
+          ServerSentEvent(id = "2", event = null, data = "world"),
+        )
+        .inOrder()
   }
 
   @Test
-  fun nonFlowTypeReturnsNull() {
-    val adapter = factory.get(String::class.java, emptyArray(), retrofit)
-    assertThat(adapter).isNull()
+  fun sseEventsMultilineData() = runBlocking {
+      server.enqueue(
+        MockResponse()
+          .setHeader("Content-Type", "text/event-stream")
+          .setBody("data: line one\ndata: line two\n\n")
+      )
+      val service = retrofit.create(Service::class.java)
+      val events = service.sseEvents().toList()
+      assertThat(events)
+        .containsExactly(
+          ServerSentEvent(id = null, event = null, data = "line one\nline two"),
+        )
+    Unit
   }
 
-  /** Non-suspend Flow<T> must not be handled — the factory should return null. */
   @Test
-  fun nonSuspendFlowTypeReturnsNull() {
-    val adapter = factory.get(flowOf(String::class.java), emptyArray(), retrofit)
-    assertThat(adapter).isNull()
+  fun sseEventsWithRetry() = runBlocking {
+      server.enqueue(
+        MockResponse()
+          .setHeader("Content-Type", "text/event-stream")
+          .setBody("retry: 3000\ndata: reconnect\n\n")
+      )
+      val service = retrofit.create(Service::class.java)
+      val events = service.sseEvents().toList()
+      assertThat(events)
+        .containsExactly(
+          ServerSentEvent(id = null, event = null, data = "reconnect"),
+        )
+    Unit
   }
 
-  /** suspend fun foo(): Flow<T> → responseType is the element type T. */
   @Test
-  fun suspendFlowResponseTypeIsElementType() {
-    val type = callOf(flowOf(String::class.java))
-    val adapter = factory.get(type, emptyArray(), retrofit)!!
-    assertThat(adapter.responseType()).isEqualTo(String::class.java)
+  fun sseEventsCommentsIgnored() = runBlocking {
+    server.enqueue(
+      MockResponse()
+        .setHeader("Content-Type", "text/event-stream")
+        .setBody(": this is a comment\ndata: real\n\n")
+    )
+    val service = retrofit.create(Service::class.java)
+    val events = service.sseEvents().toList()
+    assertThat(events)
+      .containsExactly(
+        ServerSentEvent(id = null, event = null, data = "real"),
+      )
+    Unit
   }
 
-  /** suspend fun foo(): Flow<T> with @Streaming → responseType is ResponseBody. */
   @Test
-  fun suspendFlowSseResponseTypeIsResponseBody() {
-    val type = callOf(flowOf(ServerSentEvent::class.java))
-    val adapter = factory.get(type, sseAnnotations(), retrofit)!!
-    assertThat(adapter.responseType()).isEqualTo(okhttp3.ResponseBody::class.java)
-  }
-
-  /** Unparameterized Flow inside Call should throw. */
-  @Test
-  fun rawFlowInsideCallThrows() {
-    val type = callOf(Flow::class.java)
+  fun sseEventsHttpError() = runBlocking {
+    server.enqueue(MockResponse().setResponseCode(500))
+    val service = retrofit.create(Service::class.java)
     try {
-      factory.get(type, emptyArray(), retrofit)
-      fail()
-    } catch (e: IllegalStateException) {
-      assertThat(e).hasMessageThat().contains("parameterized")
+      service.sseEvents().toList()
+      fail("Expected HttpException")
+    } catch (e: HttpException) {
+      assertThat(e.code()).isEqualTo(500)
+    }
+  }
+
+  @Test
+  fun sseEventsNetworkFailure() = runBlocking {
+    server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST))
+    val service = retrofit.create(Service::class.java)
+    try {
+      service.sseEvents().toList()
+      fail("Expected IOException")
+    } catch (_: IOException) {
+      // expected
     }
   }
 
   // ---------------------------------------------------------------------------
-  // Helpers
+  // Non-SSE body flow (suspend)
   // ---------------------------------------------------------------------------
 
-  /** Extracts annotations (including [@Streaming][retrofit2.http.Streaming]) from [SseHelper.events] for use in tests. */
-  private fun sseAnnotations(): Array<Annotation> =
-    SseHelper::class.java
-      .getMethod("events", kotlin.coroutines.Continuation::class.java)
-      .annotations
-      .filterIsInstance<Annotation>()
-      .toTypedArray()
+  @Test
+  fun bodyFlow() = runBlocking {
+    server.enqueue(MockResponse().setBody("hello"))
+    val service = retrofit.create(Service::class.java)
+    val values = service.body().toList()
+    assertThat(values).containsExactly("hello")
+    Unit
+  }
 
-  private fun flowOf(type: Type): Type =
-    object : ParameterizedType {
-      override fun getActualTypeArguments(): Array<Type> = arrayOf(type)
-
-      override fun getRawType(): Type = Flow::class.java
-
-      override fun getOwnerType(): Type? = null
+  @Test
+  fun bodyFlowHttpError() = runBlocking {
+    server.enqueue(MockResponse().setResponseCode(404))
+    val service = retrofit.create(Service::class.java)
+    try {
+      service.body().toList()
+      fail("Expected HttpException")
+    } catch (e: HttpException) {
+      assertThat(e.code()).isEqualTo(404)
     }
+  }
 
-  /** Wraps [innerType] in Call<innerType>, matching what Retrofit presents for suspend functions. */
-  private fun callOf(innerType: Type): Type =
-    object : ParameterizedType {
-      override fun getActualTypeArguments(): Array<Type> = arrayOf(innerType)
+  // ---------------------------------------------------------------------------
+  // Converter factory that converts ResponseBody to String
+  // ---------------------------------------------------------------------------
 
-      override fun getRawType(): Type = Call::class.java
-
-      override fun getOwnerType(): Type? = null
+  private class StringConverterFactory : Converter.Factory() {
+    override fun responseBodyConverter(
+      type: Type,
+      annotations: Array<Annotation>,
+      retrofit: Retrofit,
+    ): Converter<ResponseBody, *>? {
+      return if (type == String::class.java) {
+        Converter<ResponseBody, String> { it.string() }
+      } else {
+        null
+      }
     }
+  }
 }
 

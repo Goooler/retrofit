@@ -35,7 +35,7 @@ import retrofit2.Retrofit
 import retrofit2.http.Streaming
 
 /**
- * A [CallAdapter.Factory] that supports [Flow] as a **suspend** service-method return type.
+ * A [CallAdapter.Factory] that supports [Flow] as a `suspend` service-method return type.
  *
  * ## SSE (Server-Sent Events)
  *
@@ -133,7 +133,7 @@ private class SuspendFlowCallAdapter<R>(
 
 /**
  * A [Call] whose "response body" is a pre-built cold [Flow]. When enqueued it immediately
- * delivers the flow to the callback so that Retrofit's suspend machinery can resume the coroutine
+ * delivers the flow to the callback so that Retrofit's `suspend` machinery can resume the coroutine
  * with the flow value. The HTTP request is only started when the returned flow is collected.
  */
 private class FlowAsCall<R>(
