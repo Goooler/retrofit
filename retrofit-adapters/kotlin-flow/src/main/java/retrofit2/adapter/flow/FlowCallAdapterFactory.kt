@@ -108,7 +108,7 @@ private class SuspendFlowCallAdapter<R : Any>(
   override fun responseType(): Type = _responseType
 
   override fun adapt(call: Call<R>): Call<Flow<*>> {
-    val flow: Flow<*> =
+    val flow =
       if (isStreaming) {
         streamingFlow(call.request(), requireNotNull(eventSourceFactory))
       } else {
