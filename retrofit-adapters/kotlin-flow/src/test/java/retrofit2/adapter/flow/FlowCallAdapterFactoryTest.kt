@@ -165,9 +165,14 @@ class FlowCallAdapterFactoryTest {
     val service = retrofit.create(Service::class.java)
     try {
       service.body().toList()
-      fail("Expected NullPointerException")
-    } catch (_: NullPointerException) {
-      // expected
+      fail("Expected KotlinNullPointerException")
+    } catch (e: KotlinNullPointerException) {
+      assertThat(e)
+        .hasMessageThat()
+        .isEqualTo(
+          "Response from ${Service::class.java.name}.body" +
+            " was null but response body type was declared as non-null"
+        )
     }
   }
 

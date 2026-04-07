@@ -15,6 +15,7 @@
  */
 package retrofit2.adapter.flow
 
+import java.io.IOException
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 import kotlinx.coroutines.channels.awaitClose
@@ -30,6 +31,7 @@ import retrofit2.Call
 import retrofit2.CallAdapter
 import retrofit2.Callback
 import retrofit2.HttpException
+import retrofit2.Invocation
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.http.Streaming
@@ -182,7 +184,16 @@ private fun streamingFlow(
           t: Throwable?,
           response: okhttp3.Response?,
         ) {
-          close(t ?: response?.let { HttpException(Response.error<Nothing>(it.body, it)) })
+          val failure =
+            when {
+              t != null -> t
+              response != null && !response.isSuccessful ->
+                HttpException(Response.error<Nothing>(response.body, response))
+              response != null ->
+                IOException("SSE stream failed with unexpected successful response: ${response.code}")
+              else -> IllegalStateException("SSE stream failed without throwable or response")
+            }
+          close(failure)
         }
       },
     )
@@ -204,7 +215,18 @@ private fun <R : Any> bodyFlow(call: Call<R>): Flow<R> = callbackFlow {
         }
         val body = response.body()
         if (body == null) {
-          close(NullPointerException("Response body of a suspend fun was null"))
+          val invocation =
+            checkNotNull(call.request().tag(Invocation::class.java)) {
+              "Retrofit Invocation tag missing from request; cannot report null body location"
+            }
+          val service = invocation.service()
+          val method = invocation.method()
+          close(
+            KotlinNullPointerException(
+              "Response from ${service.name}.${method.name}" +
+                " was null but response body type was declared as non-null"
+            )
+          )
           return
         }
         trySend(body)
