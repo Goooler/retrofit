@@ -99,15 +99,6 @@ class FlowCallAdapterFactory private constructor() : CallAdapter.Factory() {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Suspend adapter: adapt(Call<R>) → Call<Flow<R>>  (or Call<Flow<ServerSentEvent>> for SSE)
-//
-// Retrofit's SuspendForBody calls callAdapter.adapt(call) expecting a Call<ResponseT>, then
-// calls KotlinExtensions.await() on it. We return a lightweight wrapper Call that, when
-// enqueued, immediately delivers a cold Flow as the response body without starting the HTTP
-// request yet. The actual HTTP request is deferred until the flow is collected.
-// ---------------------------------------------------------------------------
-
 private class SuspendFlowCallAdapter<R>(
   private val _responseType: Type,
   private val isStreaming: Boolean,
@@ -153,10 +144,6 @@ private class FlowAsCall<R>(private val delegate: Call<R>, private val flow: Flo
 
   override fun timeout(): Timeout = delegate.timeout()
 }
-
-// ---------------------------------------------------------------------------
-// Flow builders
-// ---------------------------------------------------------------------------
 
 /**
  * Returns a cold [Flow] that, when collected, opens an OkHttp [EventSource] for the given [request]

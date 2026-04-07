@@ -51,10 +51,6 @@ class FlowCallAdapterFactoryTest {
         .addCallAdapterFactory(FlowCallAdapterFactory.create())
         .build()
 
-  // ---------------------------------------------------------------------------
-  // SSE (suspend)
-  // ---------------------------------------------------------------------------
-
   @Test
   fun sseEvents() = runBlocking {
     server.enqueue(
@@ -136,10 +132,6 @@ class FlowCallAdapterFactoryTest {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Non-SSE body flow (suspend)
-  // ---------------------------------------------------------------------------
-
   @Test
   fun bodyFlow() = runBlocking {
     server.enqueue(MockResponse().setBody("hello"))
@@ -160,10 +152,6 @@ class FlowCallAdapterFactoryTest {
       assertThat(e.code()).isEqualTo(404)
     }
   }
-
-  // ---------------------------------------------------------------------------
-  // Converter factory that converts ResponseBody to String
-  // ---------------------------------------------------------------------------
 
   private class StringConverterFactory : Converter.Factory() {
     override fun responseBodyConverter(
