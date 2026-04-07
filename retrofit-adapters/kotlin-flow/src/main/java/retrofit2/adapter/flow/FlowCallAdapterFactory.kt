@@ -94,6 +94,11 @@ class FlowCallAdapterFactory private constructor() : CallAdapter.Factory() {
       )
     }
     val elementType = getParameterUpperBound(0, callType)
+    if (isStreaming && getRawType(elementType) != ServerSentEvent::class.java) {
+      error(
+        "@Streaming on a Flow return type requires Flow<ServerSentEvent>, but found Flow<$elementType>"
+      )
+    }
     val responseType = if (isStreaming) ResponseBody::class.java else elementType
     val eventSourceFactory =
       if (isStreaming) EventSources.createFactory(retrofit.callFactory()) else null
@@ -161,7 +166,11 @@ private fun streamingFlow(
       request,
       object : EventSourceListener() {
         override fun onEvent(eventSource: EventSource, id: String?, type: String?, data: String) {
-          trySend(ServerSentEvent(id = id, event = type, data = data))
+          val result = trySend(ServerSentEvent(id = id, event = type, data = data))
+          if (result.isFailure) {
+            eventSource.cancel()
+            close(result.exceptionOrNull())
+          }
         }
 
         override fun onClosed(eventSource: EventSource) {
@@ -185,29 +194,28 @@ private fun streamingFlow(
  * response body, and completes. Errors result in [HttpException] or [java.io.IOException].
  */
 private fun <R : Any> bodyFlow(call: Call<R>): Flow<R> = callbackFlow {
-  call
-    .clone()
-    .enqueue(
-      object : Callback<R> {
-        override fun onResponse(call: Call<R>, response: Response<R>) {
-          if (!response.isSuccessful) {
-            close(HttpException(response))
-            return
-          }
-          val body = response.body()
-          if (body == null) {
-            close()
-            return
-          }
-          trySend(body)
-          close()
+  val flowCall = call.clone()
+  flowCall.enqueue(
+    object : Callback<R> {
+      override fun onResponse(call: Call<R>, response: Response<R>) {
+        if (!response.isSuccessful) {
+          close(HttpException(response))
+          return
         }
-
-        override fun onFailure(call: Call<R>, t: Throwable) {
-          close(t)
+        val body = response.body()
+        if (body == null) {
+          close(NullPointerException("Response body of a suspend fun was null"))
+          return
         }
+        trySend(body)
+        close()
       }
-    )
 
-  awaitClose { call.cancel() }
+      override fun onFailure(call: Call<R>, t: Throwable) {
+        close(t)
+      }
+    }
+  )
+
+  awaitClose { flowCall.cancel() }
 }

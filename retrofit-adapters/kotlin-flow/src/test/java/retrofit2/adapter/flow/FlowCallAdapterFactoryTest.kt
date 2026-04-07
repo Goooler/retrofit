@@ -43,6 +43,11 @@ class FlowCallAdapterFactoryTest {
     @GET("/") suspend fun body(): Flow<String>
   }
 
+  /** Service method that incorrectly uses @Streaming with a non-ServerSentEvent element type. */
+  interface BadStreamingService {
+    @Streaming @GET("/") suspend fun events(): Flow<String>
+  }
+
   private val retrofit
     get() =
       Retrofit.Builder()
@@ -150,6 +155,31 @@ class FlowCallAdapterFactoryTest {
       fail("Expected HttpException")
     } catch (e: HttpException) {
       assertThat(e.code()).isEqualTo(404)
+    }
+  }
+
+  @Test
+  fun bodyFlowNullBodyFails() = runBlocking {
+    // 204 No Content — response body is null
+    server.enqueue(MockResponse().setResponseCode(204))
+    val service = retrofit.create(Service::class.java)
+    try {
+      service.body().toList()
+      fail("Expected NullPointerException")
+    } catch (_: NullPointerException) {
+      // expected
+    }
+  }
+
+  @Test
+  fun streamingWithWrongElementTypeThrows() = runBlocking {
+    val service = retrofit.create(BadStreamingService::class.java)
+    try {
+      service.events()
+      fail("Expected IllegalArgumentException for @Streaming with non-ServerSentEvent element type")
+    } catch (e: IllegalArgumentException) {
+      // Retrofit wraps the IllegalStateException from our factory in IllegalArgumentException.
+      assertThat(e).hasCauseThat().hasMessageThat().contains("Flow<ServerSentEvent>")
     }
   }
 
