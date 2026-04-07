@@ -161,7 +161,7 @@ private class FlowAsCall<R>(private val delegate: Call<R>, private val flow: Flo
 /**
  * Returns a cold [Flow] that, when collected, opens an OkHttp [EventSource] for the given [request]
  * and emits each parsed [ServerSentEvent]. The connection is closed when the stream ends or the
- * flow is cancelled.
+ * flow is canceled.
  */
 private fun streamingFlow(
   request: Request,
