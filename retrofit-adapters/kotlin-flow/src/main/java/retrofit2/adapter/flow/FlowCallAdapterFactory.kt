@@ -89,7 +89,9 @@ class FlowCallAdapterFactory private constructor() : CallAdapter.Factory() {
     val callType = getParameterUpperBound(0, returnType)
     if (getRawType(callType) != Flow::class.java) return null
     if (callType !is ParameterizedType) {
-      error("Flow return type must be parameterized as Flow<Foo> or Flow<? extends Foo>")
+      error(
+        "Flow return type must be parameterized as Flow<ServerSentEvent>, Flow<Foo>, or Flow<? extends Foo>"
+      )
     }
     val elementType = getParameterUpperBound(0, callType)
     val responseType = if (isStreaming) ResponseBody::class.java else elementType
