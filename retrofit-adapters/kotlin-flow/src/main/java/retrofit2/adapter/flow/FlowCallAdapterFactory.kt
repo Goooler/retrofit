@@ -99,7 +99,7 @@ class FlowCallAdapterFactory private constructor() : CallAdapter.Factory() {
   }
 }
 
-private class SuspendFlowCallAdapter<R>(
+private class SuspendFlowCallAdapter<R : Any>(
   private val _responseType: Type,
   private val isStreaming: Boolean,
   private val eventSourceFactory: EventSource.Factory?,
@@ -123,7 +123,7 @@ private class SuspendFlowCallAdapter<R>(
  * the flow to the callback so that Retrofit's `suspend` machinery can resume the coroutine with the
  * flow value. The HTTP request is only started when the returned flow is collected.
  */
-private class FlowAsCall<R>(private val delegate: Call<R>, private val flow: Flow<*>) :
+private class FlowAsCall<R : Any>(private val delegate: Call<R>, private val flow: Flow<*>) :
   Call<Flow<*>> {
 
   override fun enqueue(callback: Callback<Flow<*>>) {
@@ -182,7 +182,7 @@ private fun streamingFlow(
  * Returns a cold [Flow] that, when collected, makes the HTTP call, emits the single converted
  * response body, and completes. Errors result in [HttpException] or [java.io.IOException].
  */
-private fun <R> bodyFlow(call: Call<R>): Flow<R> = callbackFlow {
+private fun <R : Any> bodyFlow(call: Call<R>): Flow<R> = callbackFlow {
   call
     .clone()
     .enqueue(
