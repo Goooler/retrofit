@@ -50,6 +50,10 @@ javadoc {
   exclude('retrofit2/internal/**')
 }
 
+tasks.named { it == 'sourcesJar'}.configureEach {
+  (it as Jar).from extra.allSource
+}
+
 tasks.named('jar', Jar) {
   from(extra.output)
 
